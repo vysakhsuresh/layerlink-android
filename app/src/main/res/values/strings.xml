@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LayerLink</string>
+    <string name="tagline">Secure, browser-to-browser screen broadcasting via WebRTC.</string>
+
+    <string name="btn_start">Initialize Broadcast</string>
+    <string name="btn_stop">Stop Broadcast</string>
+    <string name="share_link_label">Share this secure link with your viewer:</string>
+    <string name="share_link_title">Share LayerLink viewer link</string>
+    <string name="link_copied">Link copied to clipboard</string>
+    <string name="permission_denied">Screen capture permission is required to broadcast</string>
+
+    <string name="status_idle">System Idle</string>
+    <string name="status_requesting">Starting Broadcast…</string>
+    <string name="status_waiting">Awaiting Viewer…</string>
+    <string name="status_live">Connection Live</string>
+    <string name="status_closed">Viewer Disconnected</string>
+    <string name="status_error">Error: %1$s</string>
+
+    <string name="notification_channel_name">LayerLink Broadcast</string>
+    <string name="notification_title">LayerLink is broadcasting</string>
+    <string name="notification_text">Your screen is being shared. Tap Stop in the app to end it.</string>
+</resources>
