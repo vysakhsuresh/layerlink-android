@@ -1,26 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Open Link" mark: two crossing pill shapes forming a chain-link glyph, sized and
+     centered inside the adaptive-icon safe zone (66dp circle centered at 54,54 of the
+     108x108 canvas) so it isn't clipped by a circular or squircle launcher mask. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M0,0h108v108h-108z" />
-    <path
-        android:strokeWidth="4"
-        android:fillColor="#33101827"
-        android:pathData="M54,32 L82,42 L54,52 L26,42 Z"
-        android:strokeColor="#F8FAFC" />
-    <path
-        android:strokeWidth="4"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:fillColor="#00000000"
-        android:pathData="M26,54 L54,64 L82,54 M26,66 L54,76 L82,66"
-        android:strokeColor="#94A3B8" />
-    <path
-        android:strokeWidth="4"
-        android:fillColor="#3338BDF8"
-        android:pathData="M54,32 L82,42 L54,52 L26,42 Z"
-        android:strokeColor="#38BDF8" />
+
+    <group
+        android:pivotX="46"
+        android:pivotY="64"
+        android:rotation="-45">
+        <path
+            android:fillColor="#F8FAFC"
+            android:pathData="M37,56 H55 A8,8 0 0 1 63,64 A8,8 0 0 1 55,72 H37 A8,8 0 0 1 29,64 A8,8 0 0 1 37,56 Z" />
+    </group>
+
+    <group
+        android:pivotX="64"
+        android:pivotY="46"
+        android:rotation="-45">
+        <path
+            android:fillColor="#F8FAFC"
+            android:pathData="M55,38 H73 A8,8 0 0 1 81,46 A8,8 0 0 1 73,54 H55 A8,8 0 0 1 47,46 A8,8 0 0 1 55,38 Z" />
+    </group>
+
 </vector>

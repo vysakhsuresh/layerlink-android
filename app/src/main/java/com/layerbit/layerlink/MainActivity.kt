@@ -21,9 +21,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.layerbit.core.brand.BrandLinks
+import com.layerbit.core.webrtc.SessionState
 import com.layerbit.layerlink.databinding.ActivityMainBinding
 import com.layerbit.layerlink.service.ScreenShareService
-import com.layerbit.core.webrtc.SessionState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.webrtc.RendererCommon
@@ -82,6 +83,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnStop.setOnClickListener { boundService?.stopSharing() }
         binding.btnCopy.setOnClickListener { copyLink() }
         binding.btnShare.setOnClickListener { shareLink() }
+        binding.brandFooterRow.setOnClickListener { BrandLinks.openWebsite(this) }
+        binding.btnGetHelp.setOnClickListener { BrandLinks.showGetHelpDialog(this) }
+        binding.btnBuyCoffee.setOnClickListener { BrandLinks.openCoffee(this) }
 
         maybeRequestNotificationPermission()
         renderState(SessionState.Idle)

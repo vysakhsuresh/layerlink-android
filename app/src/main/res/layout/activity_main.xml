@@ -74,6 +74,7 @@
             android:id="@+id/actionBarrier"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:barrierAllowsGoneWidgets="false"
             app:barrierDirection="bottom"
             app:constraint_referenced_ids="btnStart,btnStop" />
 
@@ -154,6 +155,16 @@
                 android:layout_height="match_parent" />
 
         </androidx.cardview.widget.CardView>
+
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/contentBarrier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierAllowsGoneWidgets="false"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="btnStart,btnStop,linkContainer,previewCard" />
+
+        <include layout="@layout/view_brand_footer" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
