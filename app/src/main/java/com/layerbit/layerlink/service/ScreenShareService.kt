@@ -8,10 +8,12 @@ import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.layerbit.layerlink.R
+import com.layerbit.layerlink.overlay.FloatingStopController
 import com.layerbit.layerlink.util.getParcelableExtraCompat
 import com.layerbit.layerlink.webrtc.LayerLinkHostSession
 import com.layerbit.layerlink.webrtc.SessionState
@@ -32,6 +34,7 @@ class ScreenShareService : LifecycleService() {
 
     private val binder = LocalBinder()
     private var hostSession: LayerLinkHostSession? = null
+    private var floatingStopController: FloatingStopController? = null
 
     private val _state = MutableStateFlow<SessionState>(SessionState.Idle)
     val state: StateFlow<SessionState> = _state.asStateFlow()
@@ -98,11 +101,20 @@ class ScreenShareService : LifecycleService() {
                 }
             }
         ).also { it.start() }
+        showFloatingStopControlIfPermitted()
+    }
+
+    private fun showFloatingStopControlIfPermitted() {
+        if (!Settings.canDrawOverlays(this)) return
+        if (floatingStopController != null) return
+        floatingStopController = FloatingStopController(this) { stopSession() }.also { it.show() }
     }
 
     private fun stopSession() {
         hostSession?.close()
         hostSession = null
+        floatingStopController?.hide()
+        floatingStopController = null
         _state.value = SessionState.Idle
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -137,6 +149,8 @@ class ScreenShareService : LifecycleService() {
     override fun onDestroy() {
         hostSession?.close()
         hostSession = null
+        floatingStopController?.hide()
+        floatingStopController = null
         super.onDestroy()
     }
 

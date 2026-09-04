@@ -10,9 +10,11 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -63,6 +65,14 @@ class MainActivity : AppCompatActivity() {
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    private val overlayPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        // Whether or not it was granted, proceed - the floating Stop control is a nice-to-have,
+        // not a requirement for broadcasting.
+        launchScreenCapture()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -106,6 +116,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestScreenCapture() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            Toast.makeText(this, R.string.overlay_permission_rationale, Toast.LENGTH_LONG).show()
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+            overlayPermissionLauncher.launch(intent)
+            return
+        }
+        launchScreenCapture()
+    }
+
+    private fun launchScreenCapture() {
         val manager = getSystemService(MediaProjectionManager::class.java)
         screenCaptureLauncher.launch(manager.createScreenCaptureIntent())
     }
