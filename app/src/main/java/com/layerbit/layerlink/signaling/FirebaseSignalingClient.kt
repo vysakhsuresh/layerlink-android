@@ -1,6 +1,7 @@
 package com.layerbit.layerlink.signaling
 
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -28,8 +29,14 @@ import org.json.JSONObject
  */
 class FirebaseSignalingClient(
     private val databaseUrl: String = DEFAULT_DATABASE_URL,
+    // `answer`/`answerCandidates` are long-lived Server-Sent-Events streams: Firebase only
+    // pushes a new event when the value actually changes (e.g. once the web viewer finishes
+    // loading and posts its answer, which can easily take longer than OkHttp's 10s default
+    // read timeout). A finite read timeout kills the stream mid-wait, so the host silently
+    // stops listening even though the signaling data eventually does arrive in the database.
     private val client: OkHttpClient = OkHttpClient.Builder()
         .retryOnConnectionFailure(true)
+        .readTimeout(0, TimeUnit.MILLISECONDS)
         .build()
 ) {
 
