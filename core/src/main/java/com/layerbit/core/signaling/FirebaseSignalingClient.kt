@@ -1,4 +1,4 @@
-package com.layerbit.layerlink.signaling
+package com.layerbit.core.signaling
 
 import java.io.IOException
 import java.util.concurrent.TimeUnit

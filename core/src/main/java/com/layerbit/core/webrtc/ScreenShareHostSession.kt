@@ -1,11 +1,11 @@
-package com.layerbit.layerlink.webrtc
+package com.layerbit.core.webrtc
 
 import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjection
-import com.layerbit.layerlink.signaling.FirebaseSignalingClient
-import com.layerbit.layerlink.signaling.RtcJson
-import com.layerbit.layerlink.util.SessionIdGenerator
+import com.layerbit.core.signaling.FirebaseSignalingClient
+import com.layerbit.core.signaling.RtcJson
+import com.layerbit.core.util.SessionIdGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import okhttp3.sse.EventSource
@@ -25,27 +25,31 @@ import org.webrtc.VideoTrack
 import org.webrtc.DataChannel
 
 /**
- * Hosts one LayerLink screen-share session: captures the device screen via MediaProjection,
- * publishes it over a WebRTC [PeerConnection], and negotiates that connection through the
- * same Firebase signaling protocol the web sharer page uses - so any LayerLink web viewer can
- * connect to this Android host with no changes on the viewer side. See layerlink-sharer.body.html
- * in the layerbit-site repo for the reference implementation this class mirrors, including the
- * v1.1.0 fix of queueing remote ICE candidates until the remote description is set.
+ * Hosts one screen-share session: captures the device screen via MediaProjection, publishes it
+ * over a WebRTC [PeerConnection], and negotiates that connection through a Firebase Realtime
+ * Database signaling protocol (`sessions/{id}/offer`, `offerCandidates`, `answer`,
+ * `answerCandidates`) compatible with a plain web viewer page - no app-specific server needed.
+ * Reusable across apps in the same family: [signalingClient] and [viewerBaseUrl] default to
+ * LayerLink's own Firebase project and viewer page, but either can be swapped per app. See
+ * layerlink-sharer.body.html in the layerbit-site repo for the reference web implementation
+ * this class mirrors, including the v1.1.0 fix of queueing remote ICE candidates until the
+ * remote description is set.
  */
-class LayerLinkHostSession(
+class ScreenShareHostSession(
     private val context: Context,
     private val mediaProjectionResultData: Intent,
     private val scope: CoroutineScope,
-    private val listener: Listener
+    private val listener: Listener,
+    private val signalingClient: FirebaseSignalingClient = FirebaseSignalingClient(),
+    private val viewerBaseUrl: String = DEFAULT_VIEWER_BASE_URL
 ) {
     interface Listener {
         fun onStateChanged(state: SessionState)
     }
 
     val sessionId: String = SessionIdGenerator.generate()
-    val viewerUrl: String = "$VIEWER_BASE_URL?session=$sessionId"
+    val viewerUrl: String = "$viewerBaseUrl?session=$sessionId"
 
-    private val signalingClient = FirebaseSignalingClient()
     private val eglBase: EglBase = EglBase.create()
     val eglBaseContext: EglBase.Context get() = eglBase.eglBaseContext
 
@@ -228,9 +232,9 @@ class LayerLinkHostSession(
     }
 
     companion object {
-        private const val VIDEO_TRACK_ID = "layerlink_screen_track"
-        private const val STREAM_ID = "layerlink_stream"
+        private const val VIDEO_TRACK_ID = "screen_share_track"
+        private const val STREAM_ID = "screen_share_stream"
         private const val CAPTURE_FPS = 15
-        private const val VIEWER_BASE_URL = "https://layerbit.co.in/tools/layerlink-viewer.html"
+        const val DEFAULT_VIEWER_BASE_URL = "https://layerbit.co.in/tools/layerlink-viewer.html"
     }
 }

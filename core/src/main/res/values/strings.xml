@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_stop">Stop</string>
+    <string name="core_stop_confirm_title">Stop broadcasting?</string>
+    <string name="core_stop_confirm_message">Your viewer will be disconnected and screen sharing will end.</string>
+    <string name="core_cancel">Cancel</string>
+</resources>

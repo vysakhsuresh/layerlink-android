@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/stop_confirm_title"
+        android:text="@string/core_stop_confirm_title"
         android:textColor="@color/text_primary"
         android:textSize="16sp"
         android:textStyle="bold" />
@@ -19,7 +19,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="@string/stop_confirm_message"
+        android:text="@string/core_stop_confirm_message"
         android:textColor="@color/text_muted"
         android:textSize="13sp" />
 
@@ -35,7 +35,7 @@
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/cancel"
+            android:text="@string/core_cancel"
             android:textAllCaps="false"
             android:textColor="@color/text_muted" />
 
@@ -45,7 +45,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="@string/btn_stop"
+            android:text="@string/core_stop"
             android:textAllCaps="false"
             android:textColor="@color/status_error"
             android:textStyle="bold" />

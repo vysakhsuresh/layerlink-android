@@ -23,7 +23,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.layerbit.layerlink.databinding.ActivityMainBinding
 import com.layerbit.layerlink.service.ScreenShareService
-import com.layerbit.layerlink.webrtc.SessionState
+import com.layerbit.core.webrtc.SessionState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.webrtc.RendererCommon

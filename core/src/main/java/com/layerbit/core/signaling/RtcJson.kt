@@ -1,4 +1,4 @@
-package com.layerbit.layerlink.signaling
+package com.layerbit.core.signaling
 
 import org.json.JSONObject
 import org.webrtc.IceCandidate

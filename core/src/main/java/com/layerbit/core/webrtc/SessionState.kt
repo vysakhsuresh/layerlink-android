@@ -1,4 +1,4 @@
-package com.layerbit.layerlink.webrtc
+package com.layerbit.core.webrtc
 
 /** Mirrors the status states the web sharer page shows (`setStatus('waiting'|'live'|'closed')`). */
 sealed class SessionState {

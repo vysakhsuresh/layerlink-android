@@ -1,4 +1,4 @@
-package com.layerbit.layerlink.util
+package com.layerbit.core.util
 
 import android.content.Intent
 import android.os.Build

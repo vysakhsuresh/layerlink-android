@@ -33,17 +33,30 @@ on that same already-public access. No Firebase Android SDK dependency is needed
 
 ## Project layout
 
+Two modules: `:core` holds everything reusable across future apps in the same family
+(screen-share engine, Firebase signaling, the floating Stop overlay, shared design tokens);
+`:app` holds only what's specific to LayerLink itself (UI, branding, notification copy).
+
 ```
-app/src/main/java/com/layerbit/layerlink/
-  MainActivity.kt                     UI: start/stop, share link, local preview
-  service/ScreenShareService.kt       Foreground service (type "mediaProjection") owning capture
-  webrtc/LayerLinkHostSession.kt       Screen capture + PeerConnection + signaling wiring
+core/src/main/java/com/layerbit/core/
+  webrtc/ScreenShareHostSession.kt    Screen capture + PeerConnection + signaling wiring.
+                                       signalingClient/viewerBaseUrl default to LayerLink's own
+                                       Firebase project + viewer page but can be overridden per app.
   webrtc/SdpSuspendExt.kt             Coroutine wrappers around WebRTC's callback SDP APIs
   webrtc/SessionState.kt              Idle / Requesting / Waiting / Live / Closed / Error
   signaling/FirebaseSignalingClient.kt REST + SSE client for the sessions/{id} protocol
   signaling/RtcJson.kt                JSON <-> SessionDescription/IceCandidate, matching the web wire format
   util/SessionIdGenerator.kt          6-char session id generator
   util/IntentExt.kt                   API 33+-safe getParcelableExtra
+  overlay/FloatingStopController.kt   Draggable "Stop" bubble + confirm overlay while broadcasting
+core/src/main/res/
+  values/colors.xml                   Shared brand palette
+  layout, drawable/                   Overlay bubble/confirm UI + the shared "card" panel background
+
+app/src/main/java/com/layerbit/layerlink/
+  MainActivity.kt                     UI: start/stop, share link, local preview
+  service/ScreenShareService.kt       Foreground service (type "mediaProjection") owning capture,
+                                       constructs ScreenShareHostSession + FloatingStopController
 ```
 
 ## Requirements

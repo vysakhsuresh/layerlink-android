@@ -1,4 +1,4 @@
-package com.layerbit.layerlink.webrtc
+package com.layerbit.core.webrtc
 
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException

@@ -12,11 +12,11 @@ import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import com.layerbit.core.overlay.FloatingStopController
+import com.layerbit.core.util.getParcelableExtraCompat
+import com.layerbit.core.webrtc.ScreenShareHostSession
+import com.layerbit.core.webrtc.SessionState
 import com.layerbit.layerlink.R
-import com.layerbit.layerlink.overlay.FloatingStopController
-import com.layerbit.layerlink.util.getParcelableExtraCompat
-import com.layerbit.layerlink.webrtc.LayerLinkHostSession
-import com.layerbit.layerlink.webrtc.SessionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,7 +33,7 @@ import org.webrtc.SurfaceViewRenderer
 class ScreenShareService : LifecycleService() {
 
     private val binder = LocalBinder()
-    private var hostSession: LayerLinkHostSession? = null
+    private var hostSession: ScreenShareHostSession? = null
     private var floatingStopController: FloatingStopController? = null
 
     private val _state = MutableStateFlow<SessionState>(SessionState.Idle)
@@ -88,11 +88,11 @@ class ScreenShareService : LifecycleService() {
 
     private fun startSession(resultData: Intent) {
         if (hostSession != null) return
-        hostSession = LayerLinkHostSession(
+        hostSession = ScreenShareHostSession(
             context = applicationContext,
             mediaProjectionResultData = resultData,
             scope = lifecycleScope,
-            listener = object : LayerLinkHostSession.Listener {
+            listener = object : ScreenShareHostSession.Listener {
                 override fun onStateChanged(newState: SessionState) {
                     _state.value = newState
                     if (newState is SessionState.Closed) {

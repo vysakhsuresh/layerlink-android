@@ -10,9 +10,6 @@
     <string name="link_copied">Link copied to clipboard</string>
     <string name="permission_denied">Screen capture permission is required to broadcast</string>
     <string name="overlay_permission_rationale">Allow LayerLink to display over other apps to show a floating Stop control while broadcasting</string>
-    <string name="stop_confirm_title">Stop broadcasting?</string>
-    <string name="stop_confirm_message">Your viewer will be disconnected and screen sharing will end.</string>
-    <string name="cancel">Cancel</string>
 
     <string name="status_idle">System Idle</string>
     <string name="status_requesting">Starting Broadcast…</string>

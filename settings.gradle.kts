@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "LayerLink"
 include(":app")
+include(":core")

@@ -1,4 +1,4 @@
-package com.layerbit.layerlink.overlay
+package com.layerbit.core.overlay
 
 import android.content.Context
 import android.graphics.PixelFormat
@@ -7,13 +7,13 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import com.layerbit.layerlink.R
+import com.layerbit.core.R
 import kotlin.math.abs
 
 /**
  * A draggable "Stop" bubble shown over other apps while a broadcast is live (Android's
  * `TYPE_APPLICATION_OVERLAY`, requires the user to have granted "display over other apps"),
- * so the host can end the session without switching back into LayerLink. A tap opens a small
+ * so the host can end the session without switching back into the app. A tap opens a small
  * confirmation overlay first - dragging the bubble must never be mistaken for a tap, so a
  * broadcast is never killed by an accidental touch.
  */
