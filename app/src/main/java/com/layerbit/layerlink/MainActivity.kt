@@ -168,7 +168,15 @@ class MainActivity : AppCompatActivity() {
         stateJob?.cancel()
         val service = boundService ?: return
         stateJob = lifecycleScope.launch {
-            service.state.collect { state -> renderState(state) }
+            service.state.collect { state ->
+                // attachPreview() no-ops until the service's eglBaseContext exists, which only
+                // happens once a session is actually running - the one call made when the
+                // activity first binds (before any broadcast starts) always misses it, so the
+                // preview renderer never got initialized/attached at all, in any capture mode.
+                // Retrying on every state change catches the moment a session starts.
+                attachPreview()
+                renderState(state)
+            }
         }
     }
 
