@@ -207,28 +207,35 @@ class ScreenShareHostSession(
         }
     }
 
+    /**
+     * Every step here is independently guarded: if any one native WebRTC teardown call throws,
+     * the rest of cleanup still runs, and - critically - the caller (ScreenShareService) still
+     * sees this call return normally so it can clear its own reference and allow a new session
+     * to start. An unguarded throw here previously left a broken session wedged in place,
+     * silently blocking every subsequent broadcast attempt until the process was fully killed.
+     */
     fun close() {
         if (closed) return
         closed = true
 
-        answerEventSource?.cancel()
-        answerCandidatesEventSource?.cancel()
-        signalingClient.deleteSession(sessionId)
+        runCatching { answerEventSource?.cancel() }
+        runCatching { answerCandidatesEventSource?.cancel() }
+        runCatching { signalingClient.deleteSession(sessionId) }
 
-        peerConnection?.close()
+        runCatching { peerConnection?.close() }
         peerConnection = null
 
         screenCapturer?.let { capturer ->
             runCatching { capturer.stopCapture() }
-            capturer.dispose()
+            runCatching { capturer.dispose() }
         }
-        videoSource?.dispose()
-        surfaceTextureHelper?.dispose()
-        localVideoTrack?.dispose()
+        runCatching { videoSource?.dispose() }
+        runCatching { surfaceTextureHelper?.dispose() }
+        runCatching { localVideoTrack?.dispose() }
         if (::peerConnectionFactory.isInitialized) {
-            peerConnectionFactory.dispose()
+            runCatching { peerConnectionFactory.dispose() }
         }
-        eglBase.release()
+        runCatching { eglBase.release() }
     }
 
     companion object {

@@ -111,11 +111,16 @@ class ScreenShareService : LifecycleService() {
     }
 
     private fun stopSession() {
-        hostSession?.close()
+        // Clear the reference before closing it, not after: close() is defensive about its own
+        // native teardown calls, but if anything upstream of it ever threw, hostSession would be
+        // left permanently non-null, and startSession()'s "already running" guard would silently
+        // block every future broadcast attempt until the process was fully killed.
+        val session = hostSession
         hostSession = null
         floatingStopController?.hide()
         floatingStopController = null
         _state.value = SessionState.Idle
+        session?.close()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -147,10 +152,11 @@ class ScreenShareService : LifecycleService() {
     }
 
     override fun onDestroy() {
-        hostSession?.close()
+        val session = hostSession
         hostSession = null
         floatingStopController?.hide()
         floatingStopController = null
+        session?.close()
         super.onDestroy()
     }
 
