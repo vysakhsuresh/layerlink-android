@@ -2,6 +2,7 @@ package com.layerbit.core.overlay
 
 import android.content.Context
 import android.graphics.PixelFormat
+import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -23,7 +24,10 @@ class FloatingStopController(
 ) {
     private val appContext = context.applicationContext
     private val windowManager = appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private val inflater = LayoutInflater.from(appContext)
+    // A Service's application context has no Activity theme, so inflating with it directly
+    // would use the platform default font instead of the app's own (Space Grotesk).
+    private val themedContext = ContextThemeWrapper(appContext, R.style.Theme_Core_Overlay)
+    private val inflater = LayoutInflater.from(themedContext)
 
     private var bubbleView: View? = null
     private var confirmView: View? = null
