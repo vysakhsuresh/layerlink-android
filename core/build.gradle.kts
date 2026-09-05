@@ -26,6 +26,14 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    buildFeatures {
+        // Required even though :core has no Activity/Binding of its own: view_brand_footer.xml
+        // lives here and is <include>d from :app's activity_main.xml. View Binding's <merge>
+        // flattening for that layout's ids (brandFooterRow, btnGetHelp, btnBuyCoffee) only
+        // happens if the module that owns the layout also has view binding enabled.
+        viewBinding = true
+    }
 }
 
 dependencies {
