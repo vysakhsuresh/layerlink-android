@@ -11,3 +11,10 @@
 *.aab
 /app/build
 /app/release
+
+# Real signing credentials - never commit these. Copy keystore.properties.example to
+# keystore.properties (git-ignored) and fill in your own values, and keep the .jks/.keystore
+# file itself outside the repo entirely (or also git-ignored if it must live inside it).
+/keystore.properties
+*.jks
+*.keystore
