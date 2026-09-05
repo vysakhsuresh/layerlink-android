@@ -7,7 +7,7 @@
 
     <string name="core_powered_by">Powered by Layerbit AI</string>
     <string name="core_get_help">Get Help</string>
-    <string name="core_buy_coffee">☕ Buy me a coffee</string>
+    <string name="core_buy_coffee">Buy me a coffee</string>
     <string name="core_send_email">Send Email</string>
     <string name="core_chat_whatsapp">Chat on WhatsApp</string>
 </resources>

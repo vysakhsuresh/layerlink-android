@@ -40,8 +40,14 @@ class FloatingStopController(
 
     private fun addBubble() {
         val view = inflater.inflate(R.layout.overlay_stop_bubble, null)
+        // Default to the top-right corner - the common spot for a utility floating control
+        // (screen recorder/mirroring apps typically default here or top-center, keeping clear
+        // of the bottom gesture-nav area and most front-camera cutouts). Still fully draggable.
+        val density = appContext.resources.displayMetrics.density
+        val screenWidth = appContext.resources.displayMetrics.widthPixels
+        val bubbleSizePx = (BUBBLE_SIZE_DP * density).toInt()
         val params = overlayLayoutParams(Gravity.TOP or Gravity.START).apply {
-            x = INITIAL_MARGIN_PX
+            x = screenWidth - bubbleSizePx - INITIAL_MARGIN_PX
             y = INITIAL_MARGIN_PX * 4
         }
 
@@ -126,5 +132,6 @@ class FloatingStopController(
     companion object {
         private const val DRAG_THRESHOLD_PX = 12
         private const val INITIAL_MARGIN_PX = 24
+        private const val BUBBLE_SIZE_DP = 68
     }
 }

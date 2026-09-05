@@ -182,6 +182,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnStop.isVisible = state is SessionState.Requesting || state is SessionState.Waiting || state is SessionState.Live
         binding.linkContainer.isVisible = state is SessionState.Waiting || state is SessionState.Live
         binding.previewCard.isVisible = state is SessionState.Waiting || state is SessionState.Live
+        binding.howToUseCard.isVisible = state is SessionState.Idle || state is SessionState.Closed || state is SessionState.Error
     }
 
     private fun copyLink() {

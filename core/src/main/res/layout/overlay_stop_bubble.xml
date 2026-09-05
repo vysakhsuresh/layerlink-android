@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="56dp"
-    android:layout_height="56dp"
+    android:layout_width="68dp"
+    android:layout_height="68dp"
     android:background="@drawable/bubble_background"
     android:clickable="true"
     android:elevation="8dp"
     android:focusable="true">
 
     <ImageView
-        android:layout_width="22dp"
-        android:layout_height="22dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:layout_gravity="center"
         android:contentDescription="@string/core_stop"
         android:src="@drawable/ic_stop" />
