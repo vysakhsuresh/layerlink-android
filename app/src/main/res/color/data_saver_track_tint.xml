@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Deliberately not accent_main (cyan): that color is reserved for the single primary
+  action on the idle screen (Initialize Broadcast), so this secondary setting uses
+  status_waiting (amber) when on and text_muted (grey) when off instead.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/status_waiting" android:alpha="0.4" android:state_checked="true" />
+    <item android:color="@color/text_muted" android:alpha="0.35" />
+</selector>

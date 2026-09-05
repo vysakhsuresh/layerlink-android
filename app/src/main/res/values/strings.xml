@@ -3,6 +3,9 @@
     <string name="app_name">LayerLink</string>
     <string name="tagline">Secure, browser-to-browser screen broadcasting via WebRTC.</string>
 
+    <string name="data_saver_title">Data Saver</string>
+    <string name="data_saver_subtitle">Lower resolution &amp; frame rate to save data</string>
+
     <string name="btn_start">Initialize Broadcast</string>
     <string name="btn_stop">Stop Broadcast</string>
     <string name="share_link_label">Share this secure link with your viewer:</string>

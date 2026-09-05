@@ -47,6 +47,51 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/appTagline" />
 
+        <LinearLayout
+            android:id="@+id/dataSaverRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/statusBadge">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/data_saver_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dataSaverSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/data_saver_subtitle"
+                    android:textColor="@color/text_muted"
+                    android:textSize="11.5sp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchDataSaver"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/data_saver_title"
+                app:thumbTint="@color/data_saver_thumb_tint"
+                app:trackTint="@color/data_saver_track_tint" />
+
+        </LinearLayout>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStart"
             android:layout_width="match_parent"
@@ -56,7 +101,7 @@
             android:textAllCaps="false"
             app:backgroundTint="@color/accent_main"
             app:cornerRadius="12dp"
-            app:layout_constraintTop_toBottomOf="@id/statusBadge" />
+            app:layout_constraintTop_toBottomOf="@id/dataSaverRow" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStop"
@@ -68,7 +113,7 @@
             android:visibility="gone"
             app:backgroundTint="@color/status_error"
             app:cornerRadius="12dp"
-            app:layout_constraintTop_toBottomOf="@id/statusBadge" />
+            app:layout_constraintTop_toBottomOf="@id/dataSaverRow" />
 
         <androidx.constraintlayout.widget.Barrier
             android:id="@+id/actionBarrier"
