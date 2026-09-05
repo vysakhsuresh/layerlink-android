@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Minimal theme just for WindowManager-added overlay views (FloatingStopController). A
+     Service's own context has no Activity theme attached, so LayoutInflater.from(appContext)
+     falls back to the platform default font unless explicitly wrapped in a theme like this one. -->
+<resources>
+    <style name="Theme.Core.Overlay" parent="android:Theme.Material.NoActionBar">
+        <item name="android:fontFamily">@font/space_grotesk</item>
+    </style>
+</resources>

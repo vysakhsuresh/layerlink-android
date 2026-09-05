@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Matches the chat-bubble glyph used by the site's own "GET HELP" floating button
+     (index.html #chatFab), minus its orbiting-ring animation. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:pathData="M21,15 a2,2 0 0 1 -2,2 H7 l-4,4 V5 a2,2 0 0 1 2,-2 h14 a2,2 0 0 1 2,2 Z"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+
+    <path android:pathData="M8,9 v6" android:strokeColor="#00F2FE" android:strokeWidth="1.5" android:strokeLineCap="round" android:fillColor="#00000000" />
+    <path android:pathData="M11.25,7 v10" android:strokeColor="#38BDF8" android:strokeWidth="1.5" android:strokeLineCap="round" android:fillColor="#00000000" />
+    <path android:pathData="M14.5,9 v6" android:strokeColor="#00F2FE" android:strokeWidth="1.5" android:strokeLineCap="round" android:fillColor="#00000000" />
+
+</vector>

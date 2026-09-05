@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LayerLink</string>
+    <string name="tagline">Secure, browser-to-browser screen broadcasting via WebRTC.</string>
+
+    <string name="btn_start">Initialize Broadcast</string>
+    <string name="btn_stop">Stop Broadcast</string>
+    <string name="share_link_label">Share this secure link with your viewer:</string>
+    <string name="share_link_title">Share LayerLink viewer link</string>
+    <string name="link_copied">Link copied to clipboard</string>
+    <string name="permission_denied">Screen capture permission is required to broadcast</string>
+    <string name="overlay_permission_rationale">Allow LayerLink to display over other apps to show a floating Stop control while broadcasting</string>
+
+    <string name="how_to_use_title">How to Use LayerLink</string>
+    <string name="how_to_use_body">1. LayerLink needs permission to display over other apps, so it can show a floating Stop control while a broadcast is live. You will be asked for this automatically the first time you start a broadcast.\n\n2. Tap \"Initialize Broadcast\" and allow the screen-capture prompt that follows.\n\n3. Share the generated link with your viewer — copy it or use the share button.\n\n4. Status changes to \"Connection Live\" once your viewer opens the link.\n\n5. To end the session, tap \"Stop Broadcast\" in the app, or tap the small floating dot anywhere on your screen and confirm — no need to reopen the app.</string>
+
+    <string name="status_idle">System Idle</string>
+    <string name="status_requesting">Starting Broadcast…</string>
+    <string name="status_waiting">Awaiting Viewer…</string>
+    <string name="status_live">Connection Live</string>
+    <string name="status_closed">Viewer Disconnected</string>
+    <string name="status_error">Error: %1$s</string>
+
+    <string name="notification_channel_name">LayerLink Broadcast</string>
+    <string name="notification_title">LayerLink is broadcasting</string>
+    <string name="notification_text">Your screen is being shared. Tap Stop in the app to end it.</string>
+</resources>

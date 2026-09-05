@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background_dark">#0B1120</color>
+    <color name="surface_dark">#141B2E</color>
+    <color name="accent_main">#38BDF8</color>
+    <color name="accent_main_dim">#1E3A52</color>
+    <color name="text_primary">#F8FAFC</color>
+    <color name="text_muted">#94A3B8</color>
+    <color name="status_live">#22C55E</color>
+    <color name="status_waiting">#F59E0B</color>
+    <color name="status_idle">#94A3B8</color>
+    <color name="status_error">#EF4444</color>
+</resources>

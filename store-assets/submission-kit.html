@@ -1,0 +1,389 @@
+<title>LayerLink Submission Kit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #F3F6FB;
+    --surface: #FFFFFF;
+    --surface-2: #E9EEF6;
+    --ink: #101828;
+    --muted: #57708F;
+    --accent: #0EA5E9;
+    --border: #D7E1EE;
+    --good: #16A34A;
+    --warn: #B45309;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0B1120;
+      --surface: #141B2E;
+      --surface-2: #1B2338;
+      --ink: #F1F5F9;
+      --muted: #8DA0BE;
+      --accent: #38BDF8;
+      --border: #253352;
+      --good: #4ADE80;
+      --warn: #FBBF24;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1120;
+    --surface: #141B2E;
+    --surface-2: #1B2338;
+    --ink: #F1F5F9;
+    --muted: #8DA0BE;
+    --accent: #38BDF8;
+    --border: #253352;
+    --good: #4ADE80;
+    --warn: #FBBF24;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 44px 24px 100px; }
+
+  header { padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(26px, 4vw, 36px);
+    margin: 0 0 10px;
+    text-wrap: balance;
+  }
+  header p { margin: 0; color: var(--muted); font-size: 14.5px; max-width: 62ch; line-height: 1.55; }
+
+  nav.toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  nav.toc a {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    text-decoration: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 6px 11px;
+    border-radius: 999px;
+  }
+  nav.toc a:hover { color: var(--accent); border-color: var(--accent); }
+
+  section { margin-top: 40px; scroll-margin-top: 20px; }
+  .sec-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .sec-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 20px;
+    margin: 0;
+  }
+  .sec-sub { color: var(--muted); font-size: 13.5px; margin: 6px 0 18px; max-width: 64ch; line-height: 1.55; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .field-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .char-count { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+  .char-count.ok { color: var(--good); }
+
+  .copy-block {
+    position: relative;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 46px 14px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--ink);
+  }
+  .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 5px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .copy-btn.copied { color: var(--good); border-color: var(--good); }
+
+  p.note { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin: 10px 0 0; }
+  p.note strong { color: var(--ink); }
+
+  .qa { margin-bottom: 16px; }
+  .qa .q { font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .qa .a { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+  .qa .a strong { color: var(--ink); }
+
+  ol.steps { margin: 0; padding-left: 20px; }
+  ol.steps li { margin-bottom: 10px; font-size: 13.5px; line-height: 1.6; }
+  ol.steps code, p.note code, .qa code {
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 12.5px;
+  }
+
+  .checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .status {
+    flex-shrink: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .status.ready { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .status.todo { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+
+  .warn-box {
+    background: color-mix(in srgb, var(--warn) 10%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--border));
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+  .warn-box strong { color: var(--warn); }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 600px) {
+    .copy-block { font-size: 12px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Play Console reference · LayerLink v1.0.0</p>
+    <h1>Everything to paste into Play Console</h1>
+    <p>Copy-paste text for every form Play Console asks for, plus the two things that need actual decisions from you: signing key generation and the content rating questionnaire, which only you can answer inside the console.</p>
+    <nav class="toc">
+      <a href="#listing">1. Store listing</a>
+      <a href="#assets">2. Assets</a>
+      <a href="#datasafety">3. Data safety</a>
+      <a href="#permissions">4. Permissions</a>
+      <a href="#rating">5. Content rating</a>
+      <a href="#signing">6. Signing &amp; build</a>
+    </nav>
+  </header>
+
+  <section id="listing">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Store listing</h2></div>
+    <p class="sec-sub">Play Console → your app → Store presence → Main store listing.</p>
+
+    <div class="card">
+      <div class="field-label">App name</div>
+      <div class="copy-block" data-copy>LayerLink<button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label">Short description <span class="char-count" data-max="80">0 / 80</span></div>
+      <div class="copy-block" data-copy>Share your screen instantly via a link. Peer-to-peer, no sign-up required.<button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label">Full description <span class="char-count" data-max="4000">0 / 4000</span></div>
+      <div class="copy-block" data-copy>LayerLink turns your phone into an instant screen-sharing broadcaster. Start a session, share one link, and anyone can watch your screen live in their browser — no app install, no account, and nothing to sign up for on either side.
+
+HOW IT WORKS
+Tap Initialize Broadcast and LayerLink generates a private session link on the spot. Send it to whoever needs to see your screen — a teammate, a support agent, a friend troubleshooting your phone. The moment they open the link, they're watching live.
+
+Under the hood, LayerLink uses WebRTC, the same real-time video technology behind modern video calling — the actual video stream travels directly between your phone and your viewer's browser, peer-to-peer. It never passes through or gets stored on our servers.
+
+BUILT FOR REAL USE
+• Floating Stop control — end a broadcast from anywhere on your phone, even with LayerLink in the background, with a confirmation step so a stray tap can't cut you off mid-session.
+• One-tap copy and share for the session link.
+• Works with any modern browser on the viewing end — desktop or mobile.
+• No account, no login, no persistent history.
+
+PRIVACY BY DESIGN
+LayerLink doesn't record, store, or upload your screen anywhere. The only data that touches our servers is short-lived connection metadata needed to link your phone to your viewer's browser, and it's discarded the moment your session ends.
+
+Built by Layerbit AI.<button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+    </div>
+
+    <p class="note">Play Console's own live counters will show the real remaining character budget as you type — the numbers above are just for reference while drafting.</p>
+  </section>
+
+  <section id="assets">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Graphic assets</h2></div>
+    <p class="sec-sub">Play Console → Store presence → Main store listing → Graphics.</p>
+    <div class="card">
+      <ul class="checklist">
+        <li><span class="status ready">Ready</span> App icon, 512×512, opaque — <code>store-assets/icon_512.png</code></li>
+        <li><span class="status ready">Ready</span> Feature graphic, 1024×500 — <code>store-assets/feature_graphic_1024x500.png</code></li>
+        <li><span class="status todo">Todo</span> Phone screenshots — at least 2, up to 8. Use real screens from testing (idle screen with the How to Use card, and a live broadcast). Play Console accepts 9:16 phone screenshots directly from your device, no resizing needed.</li>
+      </ul>
+      <p class="note">Both ready-made files are already committed to the repo under <code>store-assets/</code>.</p>
+    </div>
+  </section>
+
+  <section id="datasafety">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Data safety</h2></div>
+    <p class="sec-sub">Play Console → App content → Data safety. Google's exact question wording shifts over time — match these answers to whatever phrasing you're shown, don't expect a verbatim match.</p>
+
+    <div class="card">
+      <div class="qa">
+        <div class="q">Does your app collect or share any required user data types?</div>
+        <div class="a"><strong>Yes</strong> — limited, and only transiently.</div>
+      </div>
+      <div class="qa">
+        <div class="q">Photos and videos</div>
+        <div class="a"><strong>Not collected.</strong> This is the one worth getting right: your screen video travels peer-to-peer straight to the viewer's browser over WebRTC. It never reaches LayerLink's or Layerbit's servers, so it isn't "collected" under Play's definition even though sharing video is the whole point of the app.</div>
+      </div>
+      <div class="qa">
+        <div class="q">App activity / Device or other IDs</div>
+        <div class="a">A randomly generated session ID and WebRTC connection metadata (SDP offer/answer, ICE network candidates) are sent to Firebase Realtime Database <strong>only to connect your phone to a viewer's browser</strong>. Not tied to any user account or identity. Deleted automatically when the session ends or is stopped.</div>
+      </div>
+      <div class="qa">
+        <div class="q">Location, personal info, financial info, health, messages, audio, files, calendar, contacts, web browsing</div>
+        <div class="a"><strong>Not collected</strong> — none of these apply.</div>
+      </div>
+      <div class="qa">
+        <div class="q">Is data encrypted in transit?</div>
+        <div class="a"><strong>Yes</strong> — HTTPS to Firebase for signaling; the WebRTC video itself is encrypted end-to-end by protocol (DTLS-SRTP), independent of our signaling channel.</div>
+      </div>
+      <div class="qa">
+        <div class="q">Can users request data deletion?</div>
+        <div class="a">There's no persistent account or identity to delete data for — session data is anonymous and self-expiring. Worth stating exactly that if the form asks for a data-deletion policy description.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="permissions">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Sensitive permissions declaration</h2></div>
+    <p class="sec-sub">Play Console → App content → Permissions declaration. Pick the closest matching category shown in your console, then paste the description.</p>
+
+    <div class="card">
+      <div class="field-label">SYSTEM_ALERT_WINDOW (display over other apps)</div>
+      <div class="copy-block" data-copy>LayerLink shows a small floating control while a screen broadcast is active, so the user can end the session from any app without switching back to LayerLink. It only appears during an active broadcast and is fully user-draggable; tapping it asks for confirmation before stopping the session.<button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label">FOREGROUND_SERVICE_MEDIA_PROJECTION</div>
+      <div class="copy-block" data-copy>The foreground service captures and transmits the user's screen in real time — this is the app's core feature, not a background task. It must run as a foreground service with an ongoing notification so Android does not terminate the capture while the user multitasks in other apps during a broadcast.<button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+    </div>
+  </section>
+
+  <section id="rating">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Content rating questionnaire</h2></div>
+    <p class="sec-sub">Play Console → App content → Content ratings. This is an interactive questionnaire only you can complete, but every honest answer for LayerLink is straightforward:</p>
+    <div class="card">
+      <ul class="checklist">
+        <li><span class="status ready">Category</span> Tools / Productivity (not Social or Communication — LayerLink doesn't message, match, or connect users to strangers).</li>
+        <li><span class="status ready">Answer "No"</span> to violence, sexual content, gambling, user-generated social content, and drug references — none apply.</li>
+        <li><span class="status ready">Answer "No"</span> to sharing location or user-generated content with other users beyond the screen the broadcaster explicitly chooses to share.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="signing">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Signing key &amp; release build</h2></div>
+    <p class="sec-sub">The one part that must happen on your machine, in Android Studio — a signing key can't be generated remotely without putting your private key somewhere it shouldn't be.</p>
+
+    <div class="warn-box"><strong>Back this up somewhere safe once created.</strong> If you lose this key, you can never publish an update to this same app listing again — Play Console cannot reset or recover it for you.</div>
+
+    <div class="card">
+      <div class="field-label">Generate the key + first release build</div>
+      <ol class="steps">
+        <li>Android Studio → <code>Build → Generate Signed App Bundle / APK</code> → choose <strong>Android App Bundle</strong>.</li>
+        <li>Click <strong>Create new...</strong> under Key store path. Choose a save location <em>outside</em> the project folder (so it can never be accidentally committed), set a strong store password and key password, fill in the certificate fields (name/organization — anything reasonable, this isn't shown to users).</li>
+        <li>Back in the repo, copy <code>keystore.properties.example</code> to <code>keystore.properties</code> (same folder, already git-ignored) and fill in the real <code>storeFile</code> path, <code>storePassword</code>, <code>keyAlias</code>, <code>keyPassword</code> you just set.</li>
+        <li>Re-run Generate Signed App Bundle — it'll now pick up <code>keystore.properties</code> automatically. Build variant: <strong>release</strong>.</li>
+        <li>The signed <code>.aab</code> lands in <code>app/release/app-release.aab</code> — that's the exact file Play Console's "Create new release" screen asks you to upload.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    LayerLink · Layerbit AI — this page is a working reference, not a Play Console form itself. Keep it open in a tab while you fill in the real console.
+  </footer>
+
+</div>
+
+<script>
+function copyBlock(btn) {
+  const block = btn.closest('[data-copy]');
+  const text = block.textContent.replace(/Copy\s*$/, '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+  }).catch(() => {});
+}
+
+document.querySelectorAll('.field-label .char-count').forEach(el => {
+  const block = el.closest('.card').querySelector('[data-copy]');
+  if (!block) return;
+  const text = block.textContent.replace(/Copy\s*$/, '').trim();
+  const max = parseInt(el.dataset.max, 10);
+  el.textContent = `${text.length} / ${max}`;
+  if (text.length <= max) el.classList.add('ok');
+});
+</script>
