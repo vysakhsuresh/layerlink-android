@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.layerbit.core.brand.BrandLinks
+import com.layerbit.core.webrtc.QualityProfile
 import com.layerbit.core.webrtc.SessionState
 import com.layerbit.layerlink.databinding.ActivityMainBinding
 import com.layerbit.layerlink.service.ScreenShareService
@@ -86,6 +87,9 @@ class MainActivity : AppCompatActivity() {
         binding.brandFooterInclude.brandFooterRow.setOnClickListener { BrandLinks.openWebsite(this) }
         binding.brandFooterInclude.btnGetHelp.setOnClickListener { BrandLinks.showGetHelpDialog(this) }
         binding.brandFooterInclude.btnBuyCoffee.setOnClickListener { BrandLinks.openCoffee(this) }
+        binding.switchDataSaver.setOnCheckedChangeListener { _, isChecked ->
+            binding.dataSaverSubtitle.isVisible = isChecked
+        }
 
         maybeRequestNotificationPermission()
         renderState(SessionState.Idle)
@@ -135,10 +139,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startSharing(resultData: Intent) {
+        val qualityProfile = if (binding.switchDataSaver.isChecked) {
+            QualityProfile.DATA_SAVER
+        } else {
+            QualityProfile.HIGH
+        }
         val intent = Intent(this, ScreenShareService::class.java).apply {
             action = ScreenShareService.ACTION_START
             putExtra(ScreenShareService.EXTRA_RESULT_CODE, Activity.RESULT_OK)
             putExtra(ScreenShareService.EXTRA_RESULT_DATA, resultData)
+            putExtra(ScreenShareService.EXTRA_QUALITY_PROFILE, qualityProfile.name)
         }
         ContextCompat.startForegroundService(this, intent)
     }
@@ -179,6 +189,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnStart.isVisible = state is SessionState.Idle || state is SessionState.Closed || state is SessionState.Error
+        binding.dataSaverRow.isVisible = state is SessionState.Idle || state is SessionState.Closed || state is SessionState.Error
         binding.btnStop.isVisible = state is SessionState.Requesting || state is SessionState.Waiting || state is SessionState.Live
         binding.linkContainer.isVisible = state is SessionState.Waiting || state is SessionState.Live
         binding.previewCard.isVisible = state is SessionState.Waiting || state is SessionState.Live

@@ -18,6 +18,7 @@ import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.RtpReceiver
+import org.webrtc.RtpSender
 import org.webrtc.ScreenCapturerAndroid
 import org.webrtc.SurfaceTextureHelper
 import org.webrtc.VideoSource
@@ -41,7 +42,8 @@ class ScreenShareHostSession(
     private val scope: CoroutineScope,
     private val listener: Listener,
     private val signalingClient: FirebaseSignalingClient = FirebaseSignalingClient(),
-    private val viewerBaseUrl: String = DEFAULT_VIEWER_BASE_URL
+    private val viewerBaseUrl: String = DEFAULT_VIEWER_BASE_URL,
+    private val qualityProfile: QualityProfile = QualityProfile.HIGH
 ) {
     interface Listener {
         fun onStateChanged(state: SessionState)
@@ -106,8 +108,21 @@ class ScreenShareHostSession(
 
     private fun startScreenCapture() {
         val metrics = context.resources.displayMetrics
-        val width = metrics.widthPixels
-        val height = metrics.heightPixels
+        val width: Int
+        val height: Int
+        val fps: Int
+        when (qualityProfile) {
+            QualityProfile.HIGH -> {
+                width = metrics.widthPixels
+                height = metrics.heightPixels
+                fps = CAPTURE_FPS
+            }
+            QualityProfile.DATA_SAVER -> {
+                width = roundToEven(metrics.widthPixels / 2)
+                height = roundToEven(metrics.heightPixels / 2)
+                fps = DATA_SAVER_FPS
+            }
+        }
 
         val capturer = ScreenCapturerAndroid(
             mediaProjectionResultData,
@@ -121,13 +136,17 @@ class ScreenShareHostSession(
         val source = peerConnectionFactory.createVideoSource(true /* isScreencast */)
         val helper = SurfaceTextureHelper.create("LayerLinkCapture", eglBase.eglBaseContext)
         capturer.initialize(helper, context.applicationContext, source.capturerObserver)
-        capturer.startCapture(width, height, CAPTURE_FPS)
+        capturer.startCapture(width, height, fps)
 
         screenCapturer = capturer
         videoSource = source
         surfaceTextureHelper = helper
         localVideoTrack = peerConnectionFactory.createVideoTrack(VIDEO_TRACK_ID, source)
     }
+
+    // Some video encoders require even capture dimensions; halving an already-even screen
+    // dimension stays even in practice, but this guards the rare odd case rather than assuming it.
+    private fun roundToEven(value: Int): Int = if (value % 2 == 0) value else value - 1
 
     private fun createPeerConnection() {
         // STUN alone only resolves each side's public address; it cannot establish a path when
@@ -191,7 +210,18 @@ class ScreenShareHostSession(
         }
 
         peerConnection = peerConnectionFactory.createPeerConnection(rtcConfig, observer)
-        localVideoTrack?.let { track -> peerConnection?.addTrack(track, listOf(STREAM_ID)) }
+        val sender = localVideoTrack?.let { track -> peerConnection?.addTrack(track, listOf(STREAM_ID)) }
+        if (qualityProfile == QualityProfile.DATA_SAVER) {
+            sender?.let { applyDataSaverBitrateCap(it) }
+        }
+    }
+
+    // HIGH leaves RtpSender parameters untouched, preserving WebRTC's existing default/adaptive
+    // bitrate behavior exactly as it was before this profile existed.
+    private fun applyDataSaverBitrateCap(sender: RtpSender) {
+        val params = sender.parameters
+        params.encodings.forEach { it.maxBitrateBps = DATA_SAVER_MAX_BITRATE_BPS }
+        sender.parameters = params
     }
 
     private suspend fun createAndSendOffer() {
@@ -270,6 +300,8 @@ class ScreenShareHostSession(
         private const val VIDEO_TRACK_ID = "screen_share_track"
         private const val STREAM_ID = "screen_share_stream"
         private const val CAPTURE_FPS = 15
+        private const val DATA_SAVER_FPS = 8
+        private const val DATA_SAVER_MAX_BITRATE_BPS = 400_000
         const val DEFAULT_VIEWER_BASE_URL = "https://layerbit.co.in/tools/layerlink-viewer.html"
     }
 }

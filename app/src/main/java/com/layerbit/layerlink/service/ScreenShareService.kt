@@ -14,6 +14,7 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.layerbit.core.overlay.FloatingStopController
 import com.layerbit.core.util.getParcelableExtraCompat
+import com.layerbit.core.webrtc.QualityProfile
 import com.layerbit.core.webrtc.ScreenShareHostSession
 import com.layerbit.core.webrtc.SessionState
 import com.layerbit.layerlink.R
@@ -62,9 +63,12 @@ class ScreenShareService : LifecycleService() {
             ACTION_START -> {
                 val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
                 val resultData = intent.getParcelableExtraCompat<Intent>(EXTRA_RESULT_DATA)
+                val qualityProfile = intent.getStringExtra(EXTRA_QUALITY_PROFILE)
+                    ?.let { runCatching { QualityProfile.valueOf(it) }.getOrNull() }
+                    ?: QualityProfile.HIGH
                 if (resultCode == Activity.RESULT_OK && resultData != null) {
                     startForegroundNotification()
-                    startSession(resultData)
+                    startSession(resultData, qualityProfile)
                 } else {
                     stopSelf()
                 }
@@ -86,12 +90,13 @@ class ScreenShareService : LifecycleService() {
         stopSession()
     }
 
-    private fun startSession(resultData: Intent) {
+    private fun startSession(resultData: Intent, qualityProfile: QualityProfile) {
         if (hostSession != null) return
         hostSession = ScreenShareHostSession(
             context = applicationContext,
             mediaProjectionResultData = resultData,
             scope = lifecycleScope,
+            qualityProfile = qualityProfile,
             listener = object : ScreenShareHostSession.Listener {
                 override fun onStateChanged(newState: SessionState) {
                     _state.value = newState
@@ -165,6 +170,7 @@ class ScreenShareService : LifecycleService() {
         const val ACTION_STOP = "com.layerbit.layerlink.action.STOP"
         const val EXTRA_RESULT_CODE = "extra_result_code"
         const val EXTRA_RESULT_DATA = "extra_result_data"
+        const val EXTRA_QUALITY_PROFILE = "extra_quality_profile"
 
         private const val CHANNEL_ID = "layerlink_broadcast_channel"
         private const val NOTIFICATION_ID = 42
