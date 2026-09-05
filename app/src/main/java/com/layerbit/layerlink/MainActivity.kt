@@ -83,9 +83,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnStop.setOnClickListener { boundService?.stopSharing() }
         binding.btnCopy.setOnClickListener { copyLink() }
         binding.btnShare.setOnClickListener { shareLink() }
-        binding.brandFooterRow.setOnClickListener { BrandLinks.openWebsite(this) }
-        binding.btnGetHelp.setOnClickListener { BrandLinks.showGetHelpDialog(this) }
-        binding.btnBuyCoffee.setOnClickListener { BrandLinks.openCoffee(this) }
+        binding.brandFooterInclude.brandFooterRow.setOnClickListener { BrandLinks.openWebsite(this) }
+        binding.brandFooterInclude.btnGetHelp.setOnClickListener { BrandLinks.showGetHelpDialog(this) }
+        binding.brandFooterInclude.btnBuyCoffee.setOnClickListener { BrandLinks.openCoffee(this) }
 
         maybeRequestNotificationPermission()
         renderState(SessionState.Idle)

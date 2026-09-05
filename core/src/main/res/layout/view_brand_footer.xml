@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Company-wide "Powered by Layerbit AI" footer + support links, meant to be dropped into
-     any app's ConstraintLayout via <include layout="@layout/view_brand_footer" />. As a
-     <merge>, its children become direct siblings of whatever ConstraintLayout includes it, so
-     the top view below can anchor to an id (e.g. a content Barrier) defined in that including
-     layout - see MainActivity's use for the pattern. -->
-<merge xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<!-- Company-wide "Powered by Layerbit AI" footer + support links, meant to be dropped into any
+     app via <include layout="@layout/view_brand_footer" android:id="@+id/..." .../> with
+     width/height/constraint attributes on the include tag itself (a real root view here, not
+     <merge> - View Binding's merge-flattening does not work across module boundaries, so the
+     including app accesses this layout's views via the generated ViewBrandFooterBinding
+     nested under the include's own id, e.g. binding.brandFooterInclude.brandFooterRow). -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
 
     <View
         android:id="@+id/brandFooterDivider"
         android:layout_width="0dp"
         android:layout_height="1dp"
-        android:layout_marginTop="28dp"
         android:background="@color/accent_main_dim"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/contentBarrier" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
         android:id="@+id/brandFooterRow"
@@ -93,4 +95,4 @@
 
     </LinearLayout>
 
-</merge>
+</androidx.constraintlayout.widget.ConstraintLayout>

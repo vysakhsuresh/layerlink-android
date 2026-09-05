@@ -164,7 +164,15 @@
             app:barrierDirection="bottom"
             app:constraint_referenced_ids="btnStart,btnStop,linkContainer,previewCard" />
 
-        <include layout="@layout/view_brand_footer" />
+        <include
+            android:id="@+id/brandFooterInclude"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            layout="@layout/view_brand_footer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/contentBarrier" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
