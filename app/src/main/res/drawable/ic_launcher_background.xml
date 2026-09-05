@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Flat fill matching the supplied icon's own dark background - a plain background layer can
+     safely bleed to the canvas edges (only foreground content needs the adaptive-icon safe
+     zone), so this is just a solid color rather than another copy of the artwork. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#242D34" android:pathData="M0,0h108v108h-108z" />
+</vector>
