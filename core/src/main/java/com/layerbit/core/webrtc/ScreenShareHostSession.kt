@@ -130,9 +130,28 @@ class ScreenShareHostSession(
     }
 
     private fun createPeerConnection() {
+        // STUN alone only resolves each side's public address; it cannot establish a path when
+        // either peer sits behind a NAT that blocks direct/hole-punched traffic (symmetric NAT,
+        // CGNAT on mobile data, restrictive Wi-Fi router ACLs). That combination is common enough
+        // that the host and viewer can each report "waiting"/"searching" forever with no error,
+        // since ICE just never finds a working candidate pair. A TURN relay fallback (matching
+        // the one added to layerlink-sharer.html/layerlink-viewer.html) fixes that by giving both
+        // sides a relayed path when a direct one isn't possible.
         val iceServers = listOf(
             PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
-            PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer()
+            PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer(),
+            PeerConnection.IceServer.builder("turn:openrelay.metered.ca:80")
+                .setUsername("openrelayproject")
+                .setPassword("openrelayproject")
+                .createIceServer(),
+            PeerConnection.IceServer.builder("turn:openrelay.metered.ca:443")
+                .setUsername("openrelayproject")
+                .setPassword("openrelayproject")
+                .createIceServer(),
+            PeerConnection.IceServer.builder("turn:openrelay.metered.ca:443?transport=tcp")
+                .setUsername("openrelayproject")
+                .setPassword("openrelayproject")
+                .createIceServer()
         )
         val rtcConfig = PeerConnection.RTCConfiguration(iceServers).apply {
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
@@ -144,6 +163,7 @@ class ScreenShareHostSession(
             }
 
             override fun onConnectionChange(newState: PeerConnection.PeerConnectionState) {
+                android.util.Log.d(TAG, "onConnectionChange: $newState")
                 when (newState) {
                     PeerConnection.PeerConnectionState.CONNECTED ->
                         listener.onStateChanged(SessionState.Live(viewerUrl, sessionId))
@@ -155,9 +175,13 @@ class ScreenShareHostSession(
             }
 
             override fun onSignalingChange(state: PeerConnection.SignalingState) = Unit
-            override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) = Unit
+            override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) {
+                android.util.Log.d(TAG, "onIceConnectionChange: $state")
+            }
             override fun onIceConnectionReceivingChange(receiving: Boolean) = Unit
-            override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) = Unit
+            override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) {
+                android.util.Log.d(TAG, "onIceGatheringChange: $state")
+            }
             override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>) = Unit
             override fun onAddStream(stream: MediaStream) = Unit
             override fun onRemoveStream(stream: MediaStream) = Unit
@@ -175,11 +199,13 @@ class ScreenShareHostSession(
         val offer = pc.suspendCreateOffer(MediaConstraints())
         pc.suspendSetLocalDescription(offer)
         signalingClient.setOffer(sessionId, RtcJson.sessionDescriptionToJson(offer))
+        android.util.Log.d(TAG, "Offer sent for session $sessionId")
     }
 
     private fun observeSignaling() {
         answerEventSource = signalingClient.observeAnswer(sessionId) { raw ->
             if (raw == null || hasRemoteAnswer) return@observeAnswer
+            android.util.Log.d(TAG, "Answer received for session $sessionId")
             scope.launch {
                 try {
                     val answer = RtcJson.sessionDescriptionFromJson(raw)
@@ -187,8 +213,9 @@ class ScreenShareHostSession(
                     hasRemoteAnswer = true
                     answerCandidateQueue.forEach { peerConnection?.addIceCandidate(it) }
                     answerCandidateQueue.clear()
-                } catch (_: Exception) {
+                } catch (e: Exception) {
                     // Malformed/late signaling payload - safe to ignore and wait for the next one.
+                    android.util.Log.e(TAG, "Failed to apply remote answer", e)
                 }
             }
         }
@@ -239,6 +266,7 @@ class ScreenShareHostSession(
     }
 
     companion object {
+        private const val TAG = "ScreenShareHostSession"
         private const val VIDEO_TRACK_ID = "screen_share_track"
         private const val STREAM_ID = "screen_share_stream"
         private const val CAPTURE_FPS = 15
