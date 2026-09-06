@@ -20,6 +20,7 @@
     <string name="status_idle">System Idle</string>
     <string name="status_requesting">Starting Broadcast…</string>
     <string name="status_waiting">Awaiting Viewer…</string>
+    <string name="status_reconnecting">Connecting… retrying in %1$ds</string>
     <string name="status_live">Connection Live</string>
     <string name="status_closed">Viewer Disconnected</string>
     <string name="status_error">Error: %1$s</string>

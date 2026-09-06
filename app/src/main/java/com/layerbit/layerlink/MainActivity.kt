@@ -185,22 +185,25 @@ class MainActivity : AppCompatActivity() {
             is SessionState.Idle -> getString(R.string.status_idle)
             is SessionState.Requesting -> getString(R.string.status_requesting)
             is SessionState.Waiting -> getString(R.string.status_waiting)
+            is SessionState.Reconnecting -> getString(R.string.status_reconnecting, state.secondsRemaining)
             is SessionState.Live -> getString(R.string.status_live)
             is SessionState.Closed -> getString(R.string.status_closed)
             is SessionState.Error -> getString(R.string.status_error, state.message)
         }
 
         val link = (state as? SessionState.Waiting)?.viewerUrl
+            ?: (state as? SessionState.Reconnecting)?.viewerUrl
             ?: (state as? SessionState.Live)?.viewerUrl
         if (link != null) {
             binding.shareLinkInput.setText(link)
         }
 
+        val negotiating = state is SessionState.Waiting || state is SessionState.Reconnecting || state is SessionState.Live
         binding.btnStart.isVisible = state is SessionState.Idle || state is SessionState.Closed || state is SessionState.Error
         binding.dataSaverRow.isVisible = state is SessionState.Idle || state is SessionState.Closed || state is SessionState.Error
-        binding.btnStop.isVisible = state is SessionState.Requesting || state is SessionState.Waiting || state is SessionState.Live
-        binding.linkContainer.isVisible = state is SessionState.Waiting || state is SessionState.Live
-        binding.previewCard.isVisible = state is SessionState.Waiting || state is SessionState.Live
+        binding.btnStop.isVisible = state is SessionState.Requesting || negotiating
+        binding.linkContainer.isVisible = negotiating
+        binding.previewCard.isVisible = negotiating
         binding.howToUseCard.isVisible = state is SessionState.Idle || state is SessionState.Closed || state is SessionState.Error
     }
 

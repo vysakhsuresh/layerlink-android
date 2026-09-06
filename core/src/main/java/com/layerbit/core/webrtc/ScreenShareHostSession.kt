@@ -7,6 +7,8 @@ import com.layerbit.core.signaling.FirebaseSignalingClient
 import com.layerbit.core.signaling.RtcJson
 import com.layerbit.core.util.SessionIdGenerator
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.sse.EventSource
 import org.webrtc.DefaultVideoDecoderFactory
@@ -71,6 +73,23 @@ class ScreenShareHostSession(
     private val answerCandidateQueue = mutableListOf<IceCandidate>()
 
     private var closed = false
+
+    // Covers two distinct not-yet-Live moments with one mechanism: (1) an answer just arrived
+    // and ICE is connecting for the first time, (2) a previously-Live connection just dropped
+    // and might recover on its own (a brief Wi-Fi blip). Either way: count down, and only give
+    // up for real - closing the session - if CONNECTED is never reached before it hits zero.
+    private var reconnectJob: Job? = null
+
+    private fun startReconnectCountdown() {
+        reconnectJob?.cancel()
+        reconnectJob = scope.launch {
+            for (secondsLeft in RECONNECT_GRACE_SECONDS downTo 1) {
+                listener.onStateChanged(SessionState.Reconnecting(viewerUrl, sessionId, secondsLeft))
+                delay(1000)
+            }
+            listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId))
+        }
+    }
 
     /** Must be called only after the owning foreground service has called startForeground(). */
     fun start() {
@@ -184,11 +203,22 @@ class ScreenShareHostSession(
             override fun onConnectionChange(newState: PeerConnection.PeerConnectionState) {
                 android.util.Log.d(TAG, "onConnectionChange: $newState")
                 when (newState) {
-                    PeerConnection.PeerConnectionState.CONNECTED ->
+                    PeerConnection.PeerConnectionState.CONNECTED -> {
+                        reconnectJob?.cancel()
+                        reconnectJob = null
                         listener.onStateChanged(SessionState.Live(viewerUrl, sessionId))
-                    PeerConnection.PeerConnectionState.DISCONNECTED,
-                    PeerConnection.PeerConnectionState.FAILED ->
+                    }
+                    // DISCONNECTED only ever follows an established connection (per the WebRTC
+                    // spec), so this is specifically the "was Live, just blipped" case - give it
+                    // a grace window instead of killing the session on the first hiccup.
+                    PeerConnection.PeerConnectionState.DISCONNECTED -> startReconnectCountdown()
+                    // FAILED means the ICE agent itself already gave up after its own internal
+                    // retries - no additional grace period on top of that.
+                    PeerConnection.PeerConnectionState.FAILED -> {
+                        reconnectJob?.cancel()
+                        reconnectJob = null
                         listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId))
+                    }
                     else -> Unit
                 }
             }
@@ -241,6 +271,11 @@ class ScreenShareHostSession(
                     val answer = RtcJson.sessionDescriptionFromJson(raw)
                     peerConnection?.suspendSetRemoteDescription(answer)
                     hasRemoteAnswer = true
+                    // Negotiation is starting for the first time now - start the same countdown
+                    // used for a post-Live blip, so a connection that never completes at all
+                    // (stuck negotiating forever) doesn't wait on ICE's own, less predictable
+                    // internal timeout to eventually declare FAILED.
+                    startReconnectCountdown()
                     answerCandidateQueue.forEach { peerConnection?.addIceCandidate(it) }
                     answerCandidateQueue.clear()
                 } catch (e: Exception) {
@@ -275,6 +310,7 @@ class ScreenShareHostSession(
         if (closed) return
         closed = true
 
+        runCatching { reconnectJob?.cancel() }
         runCatching { answerEventSource?.cancel() }
         runCatching { answerCandidatesEventSource?.cancel() }
         runCatching { signalingClient.deleteSession(sessionId) }
@@ -302,6 +338,7 @@ class ScreenShareHostSession(
         private const val CAPTURE_FPS = 15
         private const val DATA_SAVER_FPS = 8
         private const val DATA_SAVER_MAX_BITRATE_BPS = 400_000
+        private const val RECONNECT_GRACE_SECONDS = 20
         const val DEFAULT_VIEWER_BASE_URL = "https://layerbit.co.in/tools/layerlink-viewer.html"
     }
 }
