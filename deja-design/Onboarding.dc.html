@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Instrument Sans', system-ui, sans-serif; background: #0E0D0C; color: #F5F1EC; -webkit-font-smoothing: antialiased; }
+    a { color: #E8A33D; } a:hover { color: #F2B75C; }
+    @keyframes riseIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes sweep { from { transform: translateX(-60%); } to { transform: translateX(420%); } }
+    .rise { animation: riseIn .55s cubic-bezier(.2,.7,.3,1) both; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #0E0D0C; padding: 56px 24px 30px; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="display: flex; align-items: center; gap: 9px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <rect x="3.4" y="3.4" width="12.6" height="12.6" rx="4" stroke="#E8A33D" stroke-width="1.6" opacity="0.4"></rect>
+      <rect x="7.9" y="7.9" width="12.6" height="12.6" rx="4" fill="#0E0D0C" stroke="#E8A33D" stroke-width="1.6"></rect>
+    </svg>
+    <span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 19px; letter-spacing: -0.03em;">deja</span>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 34px;">
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 13px; color: #A79E94; letter-spacing: 0.01em;">Reading your screenshots</div>
+      <div style="display: flex; align-items: baseline; gap: 8px;">
+        <span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 58px; line-height: 1; letter-spacing: -0.04em;">1,247</span>
+        <span style="font-size: 17px; color: #6E655C; font-weight: 500;">of 4,182</span>
+      </div>
+      <div style="height: 4px; border-radius: 3px; background: #2C2825; overflow: hidden; margin-top: 8px; position: relative;">
+        <div style="height: 100%; width: 30%; border-radius: 3px; background: #E8A33D;"></div>
+        <div style="position: absolute; top: 0; left: 0; height: 100%; width: 22%; background: linear-gradient(90deg, rgba(242,183,92,0) 0%, rgba(242,183,92,.7) 50%, rgba(242,183,92,0) 100%); animation: sweep 2.2s ease-in-out infinite;"></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+
+      <div class="rise" style="animation-delay: .15s; display: flex; align-items: center; gap: 13px; height: 54px; padding: 0 14px; border-radius: 13px; background: #1A1817; border: 1px solid #262220;">
+        <div style="width: 30px; height: 30px; border-radius: 9px; background: #3A2A14; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18l3-2 2 2 2-2 2 2 2-2 3 2V3z"></path><path d="M9 8h6M9 12h6"></path></svg>
+        </div>
+        <span style="flex-grow: 1; font-size: 14.5px; font-weight: 500;">Receipts &amp; bills</span>
+        <span style="font-size: 14.5px; color: #A79E94; font-variant-numeric: tabular-nums;">63</span>
+      </div>
+
+      <div class="rise" style="animation-delay: .45s; display: flex; align-items: center; gap: 13px; height: 54px; padding: 0 14px; border-radius: 13px; background: #1A1817; border: 1px solid #262220;">
+        <div style="width: 30px; height: 30px; border-radius: 9px; background: #3A2A14; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a2.5 2.5 0 0 0 0 5v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2.5 2.5 0 0 0 0-5z"></path><path d="M13 6v12" stroke-dasharray="2 2.5"></path></svg>
+        </div>
+        <span style="flex-grow: 1; font-size: 14.5px; font-weight: 500;">Tickets &amp; bookings</span>
+        <span style="font-size: 14.5px; color: #A79E94; font-variant-numeric: tabular-nums;">22</span>
+      </div>
+
+      <div class="rise" style="animation-delay: .75s; display: flex; align-items: center; gap: 13px; height: 54px; padding: 0 14px; border-radius: 13px; background: #1A1817; border: 1px solid #262220;">
+        <div style="width: 30px; height: 30px; border-radius: 9px; background: #3A2A14; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a9 9 0 0 1 14 0"></path><path d="M8 15.5a5 5 0 0 1 8 0"></path><circle cx="12" cy="19" r="1.1" fill="#E8A33D" stroke="none"></circle></svg>
+        </div>
+        <span style="flex-grow: 1; font-size: 14.5px; font-weight: 500;">Wi-Fi passwords &amp; codes</span>
+        <span style="font-size: 14.5px; color: #A79E94; font-variant-numeric: tabular-nums;">18</span>
+      </div>
+
+      <div class="rise" style="animation-delay: 1.05s; display: flex; align-items: center; gap: 13px; min-height: 54px; padding: 9px 14px; border-radius: 13px; background: #1A1817; border: 1px solid #2A3A31;">
+        <div style="width: 30px; height: 30px; border-radius: 9px; background: #16301F; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58C08C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2.5"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 14.5px; font-weight: 500;">IDs &amp; documents</span>
+          <span style="font-size: 12px; color: #58C08C;">Moved to your Vault</span>
+        </div>
+        <span style="font-size: 14.5px; color: #A79E94; font-variant-numeric: tabular-nums;">9</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; gap: 11px; padding: 14px; border-radius: 14px; background: #131110; border: 1px solid #232D26;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#58C08C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 3l7.5 3v5.5c0 4.4-3 8.3-7.5 9.5-4.5-1.2-7.5-5.1-7.5-9.5V6z"></path><path d="M9.2 12.2l2 2 3.6-3.9"></path></svg>
+      <div style="font-size: 12.5px; line-height: 1.45; color: #A79E94; text-wrap: pretty;">Nothing leaves your phone. Deja has <span style="color: #F5F1EC; font-weight: 500;">no internet permission</span> — check the Play Store listing yourself.</div>
+    </div>
+    <div style="font-size: 12px; color: #6E655C; text-align: center;">Indexing continues while you charge. You can close Deja.</div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>
