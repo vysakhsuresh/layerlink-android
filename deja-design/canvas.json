@@ -1,30 +1,46 @@
 {
+  "pages": [
+    { "id": "page-1", "name": "Prototype" },
+    { "id": "page-2", "name": "Screens" }
+  ],
   "artboards": [
-    { "file": "Onboarding.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "1 · First run" },
-    { "file": "Main.dc.html", "x": 480, "y": 0, "w": 390, "h": 844, "title": "2 · Timeline" },
-    { "file": "Search.dc.html", "x": 960, "y": 0, "w": 390, "h": 844, "title": "3 · Search" },
-    { "file": "Detail.dc.html", "x": 1440, "y": 0, "w": 390, "h": 844, "title": "4 · Screenshot" },
-    { "file": "Cleanup.dc.html", "x": 0, "y": 1024, "w": 390, "h": 844, "title": "5 · Clean up" },
-    { "file": "Collections.dc.html", "x": 480, "y": 1024, "w": 390, "h": 844, "title": "6 · Collections" },
-    { "file": "Ask.dc.html", "x": 960, "y": 1024, "w": 390, "h": 844, "title": "7 · Ask Deja" },
-    { "file": "Privacy.dc.html", "x": 1440, "y": 1024, "w": 390, "h": 844, "title": "8 · Privacy" },
-    { "file": "Brand.dc.html", "x": 0, "y": 2048, "w": 880, "h": 620, "title": "Brand sheet" }
+    { "file": "Main.dc.html", "page": "page-1", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Deja — tap to use", "is_interactive": true },
+    { "file": "Brand.dc.html", "page": "page-1", "x": 480, "y": 0, "w": 880, "h": 620, "title": "Brand sheet" },
+
+    { "file": "Onboarding.dc.html", "page": "page-2", "x": 0, "y": 0, "w": 390, "h": 844, "title": "1 · First run" },
+    { "file": "Timeline.dc.html", "page": "page-2", "x": 480, "y": 0, "w": 390, "h": 844, "title": "2 · Timeline" },
+    { "file": "Search.dc.html", "page": "page-2", "x": 960, "y": 0, "w": 390, "h": 844, "title": "3 · Search" },
+    { "file": "Detail.dc.html", "page": "page-2", "x": 1440, "y": 0, "w": 390, "h": 844, "title": "4 · Screenshot" },
+    { "file": "Cleanup.dc.html", "page": "page-2", "x": 0, "y": 1024, "w": 390, "h": 844, "title": "5 · Clean up" },
+    { "file": "Collections.dc.html", "page": "page-2", "x": 480, "y": 1024, "w": 390, "h": 844, "title": "6 · Collections" },
+    { "file": "Ask.dc.html", "page": "page-2", "x": 960, "y": 1024, "w": 390, "h": 844, "title": "7 · Ask Deja" },
+    { "file": "Privacy.dc.html", "page": "page-2", "x": 1440, "y": 1024, "w": 390, "h": 844, "title": "8 · Privacy" }
   ],
   "annotations": [
     {
+      "id": "proto-how",
+      "page": "page-1",
+      "x": 0,
+      "y": -190,
+      "w": 480,
+      "text": "This one is live — click into the artboard and use it.\nSearch field, the boarding-pass tile, Review, the bottom nav, back arrows.\nOn Clean up, tapping a group recomputes the total and the button; the gear opens Privacy, which can replay first run."
+    },
+    {
       "id": "row-core",
+      "page": "page-2",
       "x": 0,
       "y": -170,
       "w": 520,
-      "text": "Core loop — first run to first win.\nThe indexing screen is the moment that sells the app: it finds things while you watch."
+      "text": "Every screen as a still, for review and PNG export.\nCore loop — first run to first win."
     },
     {
       "id": "row-depth",
+      "page": "page-2",
       "x": 0,
       "y": 886,
       "w": 520,
       "text": "Depth and trust — what turns a one-time cleanup into a daily app.\nAsk Deja is the paid tier; Privacy is the brand argument."
     }
   ],
-  "launch": { "view": "canvas" }
+  "launch": { "view": "canvas", "page": "page-1" }
 }
