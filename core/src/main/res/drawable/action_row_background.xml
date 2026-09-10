@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A step lighter than card_background's surface_dark, so each tappable row in dialog_get_help
+     reads as its own control sitting on the dialog's surface, not a flat list item. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#1C2536" />
+    <corners android:radius="14dp" />
+</shape>
