@@ -1,0 +1,776 @@
+<title>Shipping LayerLink</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ground: #f4f7fa;
+    --surface: #ffffff;
+    --surface-2: #eaeff5;
+    --ink: #0f1b2d;
+    --muted: #566579;
+    --dim: #7d8b9d;
+    --line: rgba(15, 27, 45, 0.12);
+    --line-soft: rgba(15, 27, 45, 0.07);
+    --accent: #0a7ab0;
+    --accent-soft: rgba(10, 122, 176, 0.10);
+    --ok: #17803d;
+    --ok-soft: rgba(23, 128, 61, 0.10);
+    --warn: #a15c00;
+    --warn-soft: rgba(217, 138, 10, 0.13);
+    --warn-line: rgba(217, 138, 10, 0.42);
+    --code-bg: #eef2f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0b1120;
+      --surface: #141b2e;
+      --surface-2: #1b2540;
+      --ink: #f8fafc;
+      --muted: #94a3b8;
+      --dim: #6b7a90;
+      --line: rgba(255, 255, 255, 0.13);
+      --line-soft: rgba(255, 255, 255, 0.07);
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.13);
+      --ok: #34d27b;
+      --ok-soft: rgba(34, 197, 94, 0.14);
+      --warn: #f2b544;
+      --warn-soft: rgba(242, 181, 68, 0.13);
+      --warn-line: rgba(242, 181, 68, 0.38);
+      --code-bg: #0d1424;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0b1120;
+    --surface: #141b2e;
+    --surface-2: #1b2540;
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --dim: #6b7a90;
+    --line: rgba(255, 255, 255, 0.13);
+    --line-soft: rgba(255, 255, 255, 0.07);
+    --accent: #38bdf8;
+    --accent-soft: rgba(56, 189, 248, 0.13);
+    --ok: #34d27b;
+    --ok-soft: rgba(34, 197, 94, 0.14);
+    --warn: #f2b544;
+    --warn-soft: rgba(242, 181, 68, 0.13);
+    --warn-line: rgba(242, 181, 68, 0.38);
+    --code-bg: #0d1424;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    line-height: 1.55;
+    padding-inline: 18px;
+    padding-block: 0;
+  }
+
+  .wrap { max-width: 780px; margin: 0 auto; padding-block: 44px 80px; }
+
+  /* ---------- masthead ---------- */
+  .eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  h1 {
+    font-size: clamp(1.85rem, 4.5vw, 2.5rem);
+    line-height: 1.12;
+    font-weight: 700;
+    margin: 10px 0 12px;
+    text-wrap: balance;
+    letter-spacing: -0.015em;
+  }
+  .lede {
+    color: var(--muted);
+    font-size: 1.02rem;
+    max-width: 62ch;
+    margin: 0;
+  }
+  .meta-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.78rem;
+    color: var(--dim);
+  }
+  .meta-strip b { color: var(--muted); font-weight: 500; }
+
+  /* ---------- readiness ---------- */
+  .ready-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+    margin-top: 30px;
+  }
+  .ready-col {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 17px;
+  }
+  .ready-col h3 {
+    margin: 0 0 11px;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .ready-col.done h3 { color: var(--ok); }
+  .ready-col.todo h3 { color: var(--warn); }
+  .ready-col ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .ready-col li { font-size: 0.855rem; color: var(--muted); padding-left: 17px; position: relative; }
+  .ready-col li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0.52em;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+  .ready-col.done li::before { background: var(--ok); }
+  .ready-col.todo li::before { background: var(--warn); }
+
+  /* ---------- flag ---------- */
+  .flag {
+    margin-top: 28px;
+    background: var(--warn-soft);
+    border: 1px solid var(--warn-line);
+    border-radius: 13px;
+    padding: 19px 21px;
+  }
+  .flag h2 {
+    margin: 0 0 9px;
+    font-size: 1.06rem;
+    font-weight: 700;
+    color: var(--warn);
+  }
+  .flag p { margin: 0 0 10px; font-size: 0.92rem; color: var(--ink); }
+  .flag p:last-child { margin-bottom: 0; }
+  .flag ul { margin: 0 0 11px; padding-left: 19px; font-size: 0.9rem; color: var(--ink); }
+  .flag li { margin-bottom: 4px; }
+
+  /* ---------- steps ---------- */
+  .step { margin-top: 42px; }
+  .step-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding-bottom: 11px;
+    border-bottom: 2px solid var(--line);
+  }
+  .step-num {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 3px 8px;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+  .step-head h2 {
+    margin: 0;
+    font-size: 1.28rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .path {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.775rem;
+    color: var(--dim);
+    margin: 12px 0 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 2px;
+  }
+  .step > p { font-size: 0.93rem; color: var(--muted); margin: 13px 0 0; }
+  .step > p strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- field rows ---------- */
+  .fields { margin-top: 15px; display: flex; flex-direction: column; gap: 1px; background: var(--line-soft); border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+  .field { background: var(--surface); padding: 13px 16px; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+  .field dt {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 500;
+    min-width: 165px;
+    flex-shrink: 0;
+  }
+  .field dd {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    flex: 1 1 190px;
+  }
+  .field dd small { display: block; font-weight: 400; font-size: 0.8rem; color: var(--dim); margin-top: 3px; line-height: 1.45; }
+
+  /* ---------- copy blocks ---------- */
+  .copy-block { margin-top: 14px; border: 1px solid var(--line); border-radius: 11px; overflow: hidden; background: var(--surface); }
+  .copy-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px 8px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .copy-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .copy-count { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.7rem; color: var(--dim); margin-left: auto; margin-right: 4px; font-variant-numeric: tabular-nums; }
+  .copy-btn {
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 4px 11px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .copy-btn:hover { background: var(--accent-soft); }
+  .copy-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .copy-btn.copied { color: var(--ok); border-color: var(--ok); }
+  .copy-text {
+    margin: 0;
+    padding: 14px 16px;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.815rem;
+    line-height: 1.62;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--code-bg);
+  }
+
+  /* ---------- q&a ---------- */
+  .qa { margin-top: 15px; display: flex; flex-direction: column; gap: 13px; }
+  .q {
+    border-left: 2px solid var(--line);
+    padding-left: 15px;
+  }
+  .q-text { font-size: 0.87rem; font-weight: 600; color: var(--ink); margin: 0 0 5px; }
+  .q-ans { font-size: 0.87rem; color: var(--muted); margin: 0; }
+  .q-ans em { color: var(--accent); font-style: normal; font-weight: 600; }
+
+  code.inline {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.855em;
+    background: var(--code-bg);
+    border: 1px solid var(--line-soft);
+    padding: 1px 5px;
+    border-radius: 4px;
+    word-break: break-word;
+  }
+
+  .note {
+    margin-top: 14px;
+    font-size: 0.865rem;
+    color: var(--muted);
+    background: var(--accent-soft);
+    border-radius: 9px;
+    padding: 12px 15px;
+  }
+  .note strong { color: var(--ink); }
+
+  /* ---------- checklist ---------- */
+  .check { margin-top: 15px; display: flex; flex-direction: column; gap: 2px; }
+  .check label {
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    font-size: 0.885rem;
+    color: var(--muted);
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .check label:hover { background: var(--line-soft); }
+  .check input { margin: 0.28em 0 0; width: 15px; height: 15px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+  .check input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .check input:checked + span { color: var(--dim); text-decoration: line-through; }
+
+  footer {
+    margin-top: 52px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 0.82rem;
+    color: var(--dim);
+  }
+  footer b { color: var(--muted); font-weight: 500; }
+</style>
+
+<div class="wrap">
+
+  <div class="eyebrow">Play Console · first production release</div>
+  <h1>Shipping LayerLink</h1>
+  <p class="lede">
+    Every field Play Console asks for after you click <strong>Create app</strong>, in the order it
+    asks — plus the one thing that needs fixing before you submit.
+  </p>
+
+  <div class="meta-strip">
+    <span><b>Package</b> com.layerbit.layerlink</span>
+    <span><b>Version</b> 1.0.0 (code 1)</span>
+    <span><b>Target SDK</b> 36</span>
+    <span><b>Min SDK</b> 26</span>
+  </div>
+
+  <div class="ready-grid">
+    <div class="ready-col done">
+      <h3>Already done</h3>
+      <ul>
+        <li>Upload keystore generated &amp; backed up</li>
+        <li>Icon 512×512 + feature graphic 1024×500</li>
+        <li>Two phone screenshots approved</li>
+        <li>targetSdk 36 — meets the Aug 2026 rule</li>
+        <li>No ads, analytics or crash SDK in the build</li>
+      </ul>
+    </div>
+    <div class="ready-col todo">
+      <h3>Do before submitting</h3>
+      <ul>
+        <li>Publish an app-specific privacy policy</li>
+        <li>Rebuild the AAB from current <code class="inline">main</code></li>
+        <li>Answer the two judgement-call questions below</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="flag">
+    <h2>Your privacy policy doesn't cover the app yet</h2>
+    <p>
+      Play requires a policy that describes <strong>this app</strong>, and reviewers check that it
+      matches your Data safety answers. The one at <code class="inline">layerbit.co.in/privacy.html</code>
+      is written for the website, and that mismatch is a common first-submission rejection:
+    </p>
+    <ul>
+      <li>It describes cookies, Google AdSense and Analytics — <strong>the app has none of those</strong>.</li>
+      <li>It never mentions screen capture, the floating overlay, or what happens to your screen once captured — the app's most sensitive behaviour.</li>
+      <li>LayerLink appears once, in passing, as a "Cloud API tool".</li>
+    </ul>
+    <p>
+      Fix: add a LayerLink section to the existing policy (or a dedicated page), then use that exact
+      URL in Play Console. Say the word and I'll write it and push it to the site — it needs to cover
+      screen capture, the session metadata in Firebase, the TURN relay fallback, and the fact that
+      there's no account, no ads and no analytics in the app.
+    </p>
+  </div>
+
+  <!-- ============ 1 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">01</span>
+      <h2>The Create app dialog</h2>
+    </div>
+    <p class="path">All apps → Create app</p>
+    <dl class="fields">
+      <div class="field"><dt>App name</dt><dd>LayerLink<small>Shown on the store listing. 30 characters max.</small></dd></div>
+      <div class="field"><dt>Default language</dt><dd>English (United States)<small>Widest default reach. English (India) is fine too — it only sets which listing is the fallback.</small></dd></div>
+      <div class="field"><dt>App or game</dt><dd>App</dd></div>
+      <div class="field"><dt>Free or paid</dt><dd>Free<small>You can switch paid → free later, but never free → paid. Free is correct here and not reversible, so be deliberate.</small></dd></div>
+      <div class="field"><dt>Declarations</dt><dd>Tick both<small>Developer Program Policies, and US export laws.</small></dd></div>
+    </dl>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">02</span>
+      <h2>App access</h2>
+    </div>
+    <p class="path">App content → App access</p>
+    <p>
+      Pick <strong>All functionality is available without special access</strong>. LayerLink has no
+      login, no invite code and no paywalled area — a reviewer can install it and start a broadcast
+      immediately, so there are no credentials to provide.
+    </p>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">03</span>
+      <h2>Ads</h2>
+    </div>
+    <p class="path">App content → Ads</p>
+    <p>
+      <strong>No, my app does not contain ads.</strong> Confirmed against the build — there's no
+      AdMob or any ad SDK in the dependency list. The AdSense on layerbit.co.in is the website only
+      and doesn't apply here.
+    </p>
+  </section>
+
+  <!-- ============ 4 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">04</span>
+      <h2>Content rating</h2>
+    </div>
+    <p class="path">App content → Content ratings → Start questionnaire</p>
+    <dl class="fields">
+      <div class="field"><dt>Email address</dt><dd>ceo@layerbit.co.in</dd></div>
+      <div class="field"><dt>Category</dt><dd>Utility, Productivity, Communication or Other</dd></div>
+    </dl>
+    <div class="qa">
+      <div class="q">
+        <p class="q-text">Violence, sexuality, language, controlled substances, gambling, horror</p>
+        <p class="q-ans"><em>No</em> to all — none of it exists in the app.</p>
+      </div>
+      <div class="q">
+        <p class="q-text">Does the app share the user's location with other users?</p>
+        <p class="q-ans"><em>No.</em> LayerLink never reads location.</p>
+      </div>
+      <div class="q">
+        <p class="q-text">Does the app allow users to interact or exchange content with each other?</p>
+        <p class="q-ans">
+          This is the one to read carefully rather than answer on reflex. The facts: there is no chat,
+          no user accounts, no profiles, no way to discover or contact another user inside the app. But
+          a user does transmit their own screen to a person they chose by sending them a link. Answer
+          from those facts — a wrong answer here can invalidate the rating later.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">05</span>
+      <h2>Target audience</h2>
+    </div>
+    <p class="path">App content → Target audience and content</p>
+    <p>
+      Recommend <strong>18 and over</strong> only. A screen-capture app that also draws over other
+      apps is a poor fit for the Families policy, and including any under-13 bracket pulls you into
+      extra requirements you don't want on a first submission.
+    </p>
+    <p>
+      "Could your app unintentionally appeal to children?" → <strong>No</strong>. It's a developer and
+      remote-support utility with no game mechanics, characters or bright-toy styling.
+    </p>
+  </section>
+
+  <!-- ============ 6 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">06</span>
+      <h2>Data safety</h2>
+    </div>
+    <p class="path">App content → Data safety</p>
+    <p>
+      The section reviewers scrutinise hardest for a screen-capture app. Below is what the code
+      actually does, so you can answer accurately — <strong>you're the one signing this declaration</strong>,
+      so read it against the wording your console shows rather than pasting blind.
+    </p>
+    <div class="qa">
+      <div class="q">
+        <p class="q-text">The screen video itself</p>
+        <p class="q-ans">
+          Captured via MediaProjection, encrypted by WebRTC (DTLS-SRTP) and sent to the one viewer who
+          opened the user's link. It is never written to a Layerbit server and never stored anywhere by
+          the app. Play does not treat a transfer made on a specific user-initiated action, to a
+          recipient the user chose, as "sharing" — which is exactly what a broadcast is here.
+        </p>
+      </div>
+      <div class="q">
+        <p class="q-text">Connection metadata → Firebase Realtime Database</p>
+        <p class="q-ans">
+          A random 6-character session ID plus the WebRTC handshake (SDP offer/answer and ICE
+          candidates, which include the device's network addresses). Used only to introduce the two
+          ends to each other, tied to no account or identity, and deleted the moment the session stops.
+        </p>
+      </div>
+      <div class="q">
+        <p class="q-text">The TURN relay — worth knowing before you answer</p>
+        <p class="q-ans">
+          When a direct peer-to-peer path can't be established, the encrypted media falls back to
+          relaying through <code class="inline">openrelay.metered.ca</code>, a free third-party TURN
+          server. It forwards encrypted packets and cannot decrypt or store them, but it <em>is</em> a
+          third party in the path — so don't describe the app as strictly device-to-device in a way
+          that contradicts this.
+        </p>
+      </div>
+      <div class="q">
+        <p class="q-text">Is all collected data encrypted in transit?</p>
+        <p class="q-ans"><em>Yes.</em> HTTPS to Firebase for signalling; DTLS-SRTP for the media stream.</p>
+      </div>
+      <div class="q">
+        <p class="q-text">Can users request data deletion?</p>
+        <p class="q-ans">
+          There's no account to delete. Session data is anonymous and removed automatically when the
+          broadcast ends — state exactly that if the form gives you a free-text box.
+        </p>
+      </div>
+      <div class="q">
+        <p class="q-text">Everything else</p>
+        <p class="q-ans">
+          Not collected: name, email, address, phone, financial info, health, messages, photos stored
+          on the device, contacts, calendar, files, audio, browsing history, installed apps, location.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 7 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">07</span>
+      <h2>The remaining declarations</h2>
+    </div>
+    <p class="path">App content → Government apps · Financial features · Health · News</p>
+    <dl class="fields">
+      <div class="field"><dt>Government app</dt><dd>No</dd></div>
+      <div class="field"><dt>Financial features</dt><dd>My app doesn't provide any financial features</dd></div>
+      <div class="field"><dt>Health apps</dt><dd>No<small>No health research, no health data.</small></dd></div>
+      <div class="field"><dt>News app</dt><dd>No</dd></div>
+    </dl>
+  </section>
+
+  <!-- ============ 8 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">08</span>
+      <h2>Sensitive permissions</h2>
+    </div>
+    <p class="path">App content → Sensitive app permissions (appears if the console asks for a declaration)</p>
+    <p>
+      The manifest declares <code class="inline">SYSTEM_ALERT_WINDOW</code> and
+      <code class="inline">FOREGROUND_SERVICE_MEDIA_PROJECTION</code>. If your console asks for a
+      justification, these are accurate:
+    </p>
+
+    <div class="copy-block">
+      <div class="copy-bar">
+        <span class="copy-label">Display over other apps</span>
+        <button class="copy-btn" type="button" data-copy="c-overlay">Copy</button>
+      </div>
+      <p class="copy-text" id="c-overlay">LayerLink shows a small floating Stop control while a screen broadcast is active, so the user can end the session from any app without switching back to LayerLink. It appears only during an active broadcast, is draggable anywhere on screen, and asks for confirmation before stopping so an accidental tap cannot cut a session off.</p>
+    </div>
+
+    <div class="copy-block">
+      <div class="copy-bar">
+        <span class="copy-label">Media projection foreground service</span>
+        <button class="copy-btn" type="button" data-copy="c-fgs">Copy</button>
+      </div>
+      <p class="copy-text" id="c-fgs">The foreground service captures and transmits the user's screen in real time — this is the app's core, user-initiated feature, not background work. Android requires screen capture to run in a foreground service of type mediaProjection with an ongoing notification, so the capture is not terminated while the user moves between other apps during a broadcast.</p>
+    </div>
+  </section>
+
+  <!-- ============ 9 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">09</span>
+      <h2>Main store listing</h2>
+    </div>
+    <p class="path">Grow users → Store presence → Main store listing</p>
+
+    <div class="copy-block">
+      <div class="copy-bar">
+        <span class="copy-label">App name</span>
+        <span class="copy-count" data-count-for="c-name">— / 30</span>
+        <button class="copy-btn" type="button" data-copy="c-name">Copy</button>
+      </div>
+      <p class="copy-text" id="c-name">LayerLink</p>
+    </div>
+
+    <div class="copy-block">
+      <div class="copy-bar">
+        <span class="copy-label">Short description</span>
+        <span class="copy-count" data-count-for="c-short">— / 80</span>
+        <button class="copy-btn" type="button" data-copy="c-short">Copy</button>
+      </div>
+      <p class="copy-text" id="c-short">Share your screen instantly via a link. Peer-to-peer, no sign-up required.</p>
+    </div>
+
+    <div class="copy-block">
+      <div class="copy-bar">
+        <span class="copy-label">Full description</span>
+        <span class="copy-count" data-count-for="c-full">— / 4000</span>
+        <button class="copy-btn" type="button" data-copy="c-full">Copy</button>
+      </div>
+      <p class="copy-text" id="c-full">LayerLink turns your phone into an instant screen-sharing broadcaster. Start a session, share one link, and anyone can watch your screen live in their browser — no app install, no account, and nothing to sign up for on either side.
+
+HOW IT WORKS
+
+Tap Initialize Broadcast and LayerLink generates a private session link on the spot. Send it to whoever needs to see your screen — a teammate, a support agent, a friend troubleshooting your phone. The moment they open the link, they are watching live.
+
+Under the hood LayerLink uses WebRTC, the same real-time technology behind modern video calling. Your screen travels straight to your viewer wherever the network allows a direct connection, and it is encrypted in transit either way.
+
+BUILT FOR REAL USE
+
+• Data Saver — halve the resolution and frame rate with one toggle before you start, for weak Wi-Fi or mobile data.
+• Resilient connections — a brief network drop no longer ends the session. LayerLink waits for it to recover instead of making you share a new link.
+• Floating Stop control — end a broadcast from anywhere on your phone, even with LayerLink in the background, with a confirmation step so a stray tap cannot cut you off mid-session.
+• One-tap copy and share for the session link.
+• Works with any modern browser on the viewing end, desktop or mobile.
+• No account, no login, no history left behind.
+
+PRIVACY BY DESIGN
+
+LayerLink does not record or store your screen. Nothing you share is written to a Layerbit server or kept after your session ends. The only data handled on our side is short-lived connection metadata needed to introduce your phone to your viewer's browser, and it is discarded the moment the session stops.
+
+Built by Layerbit AI.</p>
+    </div>
+
+    <div class="note">
+      <strong>Graphics.</strong> Both files are already in the repo under
+      <code class="inline">store-assets/</code> — <code class="inline">icon_512.png</code> and
+      <code class="inline">feature_graphic_1024x500.png</code>. Upload your two approved phone
+      screenshots as-is; Play takes 9:16 device captures without resizing.
+    </div>
+  </section>
+
+  <!-- ============ 10 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">10</span>
+      <h2>Store settings</h2>
+    </div>
+    <p class="path">Grow users → Store presence → Store settings</p>
+    <dl class="fields">
+      <div class="field"><dt>App category</dt><dd>Tools<small>Productivity also fits. Tools is the closer match for a utility with no content of its own.</small></dd></div>
+      <div class="field"><dt>Email address</dt><dd>ceo@layerbit.co.in<small>Shown publicly on the listing — required.</small></dd></div>
+      <div class="field"><dt>Website</dt><dd>https://layerbit.co.in</dd></div>
+      <div class="field"><dt>Phone</dt><dd>Optional<small>Leave it blank unless you want it public on the listing.</small></dd></div>
+      <div class="field"><dt>Privacy policy</dt><dd>Blocked on the fix above<small>Use the app-specific URL, not the site-wide one.</small></dd></div>
+    </dl>
+  </section>
+
+  <!-- ============ 11 ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">11</span>
+      <h2>Production release</h2>
+    </div>
+    <p class="path">Release → Production → Create new release</p>
+
+    <div class="note">
+      <strong>Rebuild the bundle first.</strong> The <code class="inline">app-release.aab</code> sitting
+      in <code class="inline">app/release</code> predates everything merged since — Data Saver, the
+      launch-crash fix, the preview fix, reconnect handling and the restyled Get Help dialog. Pull
+      <code class="inline">main</code>, then Build → Generate Signed App Bundle again before uploading.
+    </div>
+
+    <p>
+      On your first upload Play will offer <strong>Play App Signing</strong> — accept it. Google holds
+      the app signing key, your <code class="inline">C:\GooglePlayStoreKey\LayerbitAI</code> keystore
+      becomes the <em>upload</em> key, and if it's ever lost Google can reset the upload key for you.
+      Without it, a lost keystore means you can never update this listing again.
+    </p>
+
+    <dl class="fields">
+      <div class="field"><dt>Countries / regions</dt><dd>All<small>Or narrow it — either is fine, and it's editable later.</small></dd></div>
+      <div class="field"><dt>App bundle</dt><dd>app-release.aab<small>Freshly rebuilt from current main.</small></dd></div>
+      <div class="field"><dt>Release name</dt><dd>1 (1.0.0)<small>Play prefills this from the bundle. Internal only.</small></dd></div>
+    </dl>
+
+    <div class="copy-block">
+      <div class="copy-bar">
+        <span class="copy-label">Release notes</span>
+        <span class="copy-count" data-count-for="c-notes">— / 500</span>
+        <button class="copy-btn" type="button" data-copy="c-notes">Copy</button>
+      </div>
+      <p class="copy-text" id="c-notes">First release.
+
+Share your phone screen with anyone through a single link — they watch live in their browser, with no app to install and no account on either side.
+
+• Data Saver mode for weak Wi-Fi or mobile data
+• Floating Stop control to end a broadcast from any app
+• Keeps the session alive through a brief network drop</p>
+    </div>
+  </section>
+
+  <!-- ============ after ============ -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">12</span>
+      <h2>After you hit Send for review</h2>
+    </div>
+    <p>
+      A first app from a brand-new developer account gets a fuller review than later updates —
+      commonly a few days, sometimes up to a couple of weeks. Screen-capture apps sit in a
+      closely-reviewed category, so the two things most likely to come back at you are a privacy
+      policy that doesn't match the Data safety answers, and the permissions justifications. Both are
+      handled above.
+    </p>
+    <p>
+      You'll get the decision by email on the account. If it's rejected, the notice names the specific
+      policy — send it to me and we'll work the fix.
+    </p>
+
+    <div class="check" id="checklist">
+      <label><input type="checkbox" id="k1"><span>App-specific privacy policy published and live</span></label>
+      <label><input type="checkbox" id="k2"><span>AAB rebuilt from current main and signed</span></label>
+      <label><input type="checkbox" id="k3"><span>App access, Ads, Content rating, Target audience done</span></label>
+      <label><input type="checkbox" id="k4"><span>Data safety submitted</span></label>
+      <label><input type="checkbox" id="k5"><span>Store listing: text, icon, feature graphic, 2 screenshots</span></label>
+      <label><input type="checkbox" id="k6"><span>Store settings: category, contact email, privacy URL</span></label>
+      <label><input type="checkbox" id="k7"><span>Production release created and rolled out</span></label>
+    </div>
+  </section>
+
+  <footer>
+    <b>LayerLink 1.0.0</b> · com.layerbit.layerlink · built against SDK 36 · Layerbit AI
+  </footer>
+
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var el = document.getElementById(btn.getAttribute('data-copy'));
+      if (!el) return;
+      var done = function () {
+        var original = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(el.textContent).then(done, function () {});
+      }
+    });
+  });
+
+  document.querySelectorAll('.copy-count').forEach(function (badge) {
+    var el = document.getElementById(badge.getAttribute('data-count-for'));
+    if (!el) return;
+    badge.textContent = el.textContent.length + badge.textContent.replace('—', '');
+  });
+
+  var boxes = document.querySelectorAll('#checklist input');
+  boxes.forEach(function (box) {
+    try {
+      if (localStorage.getItem('layerlink-release-' + box.id) === '1') box.checked = true;
+    } catch (e) {}
+    box.addEventListener('change', function () {
+      try {
+        localStorage.setItem('layerlink-release-' + box.id, box.checked ? '1' : '0');
+      } catch (e) {}
+    });
+  });
+</script>
