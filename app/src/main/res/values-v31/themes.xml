@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ draws its own splash screen from the launcher icon. Without this it falls
+         back to android:windowBackground, which happened to match, but nothing guaranteed it -
+         pinning the splash background to the same token makes the launch screen deterministic
+         and keeps the icon sitting on an unbroken navy field all the way into MainActivity. -->
+    <style name="Theme.LayerLink" parent="Base.Theme.LayerLink">
+        <item name="android:windowSplashScreenBackground">@color/background_dark</item>
+    </style>
+</resources>

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.LayerLink" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Everything lives on the base style so values-v31 can add the Android 12+ splash
+         attributes without restating the whole theme. -->
+    <style name="Base.Theme.LayerLink" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/accent_main</item>
         <item name="colorPrimaryDark">@color/background_dark</item>
         <item name="colorAccent">@color/accent_main</item>
@@ -10,4 +12,6 @@
         <item name="android:fontFamily">@font/space_grotesk</item>
         <item name="fontFamily">@font/space_grotesk</item>
     </style>
+
+    <style name="Theme.LayerLink" parent="Base.Theme.LayerLink" />
 </resources>
