@@ -31,6 +31,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.layerbit.core.R as CoreR
 import com.layerbit.core.brand.BrandLinks
 import com.layerbit.core.webrtc.CloseReason
 import com.layerbit.core.webrtc.QualityProfile
@@ -243,24 +244,24 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderStatusPill(state: SessionState) {
         val (text, colorRes, pulsing) = when (state) {
-            is SessionState.Idle -> Triple(getString(R.string.status_idle), R.color.status_idle, false)
-            is SessionState.Requesting -> Triple(getString(R.string.status_requesting), R.color.status_waiting, true)
-            is SessionState.Waiting -> Triple(getString(R.string.status_waiting), R.color.status_waiting, true)
+            is SessionState.Idle -> Triple(getString(R.string.status_idle), CoreR.color.status_idle, false)
+            is SessionState.Requesting -> Triple(getString(R.string.status_requesting), CoreR.color.status_waiting, true)
+            is SessionState.Waiting -> Triple(getString(R.string.status_waiting), CoreR.color.status_waiting, true)
             is SessionState.Reconnecting -> Triple(
                 getString(
                     if (state.connectedAtMillis != null) R.string.status_reconnecting else R.string.status_connecting,
                     state.secondsRemaining
                 ),
-                R.color.status_waiting,
+                CoreR.color.status_waiting,
                 true
             )
-            is SessionState.Live -> Triple(getString(R.string.status_live), R.color.status_live, true)
+            is SessionState.Live -> Triple(getString(R.string.status_live), CoreR.color.status_live, true)
             is SessionState.Closed -> when (state.reason) {
-                CloseReason.NEVER_CONNECTED -> Triple(getString(R.string.status_closed_never_connected), R.color.status_error, false)
-                CloseReason.CONNECTION_ENDED -> Triple(getString(R.string.status_closed), R.color.status_idle, false)
-                CloseReason.CAPTURE_STOPPED -> Triple(getString(R.string.status_idle), R.color.status_idle, false)
+                CloseReason.NEVER_CONNECTED -> Triple(getString(R.string.status_closed_never_connected), CoreR.color.status_error, false)
+                CloseReason.CONNECTION_ENDED -> Triple(getString(R.string.status_closed), CoreR.color.status_idle, false)
+                CloseReason.CAPTURE_STOPPED -> Triple(getString(R.string.status_idle), CoreR.color.status_idle, false)
             }
-            is SessionState.Error -> Triple(getString(R.string.status_error), R.color.status_error, false)
+            is SessionState.Error -> Triple(getString(R.string.status_error), CoreR.color.status_error, false)
         }
         val color = ContextCompat.getColor(this, colorRes)
         binding.statusText.text = text
@@ -268,8 +269,8 @@ class MainActivity : AppCompatActivity() {
         binding.statusDot.backgroundTintList = ColorStateList.valueOf(color)
         // Ready sits on the plain card surface; every other state gets a faint wash of its colour.
         binding.statusPill.backgroundTintList = ColorStateList.valueOf(
-            if (colorRes == R.color.status_idle) {
-                ContextCompat.getColor(this, R.color.surface_dark)
+            if (colorRes == CoreR.color.status_idle) {
+                ContextCompat.getColor(this, CoreR.color.surface_dark)
             } else {
                 ColorUtils.setAlphaComponent(color, 0x24)
             }
@@ -303,11 +304,11 @@ class MainActivity : AppCompatActivity() {
             if (quality == QualityProfile.DATA_SAVER) R.string.quality_data_saver else R.string.quality_high
         )
         val (viewerText, viewerColor) = when (state) {
-            is SessionState.Live -> R.string.viewer_connected to R.color.status_live
+            is SessionState.Live -> R.string.viewer_connected to CoreR.color.status_live
             is SessionState.Reconnecting ->
                 (if (state.connectedAtMillis != null) R.string.viewer_reconnecting else R.string.viewer_connecting) to
-                    R.color.status_waiting
-            else -> R.string.viewer_not_connected to R.color.text_muted
+                    CoreR.color.status_waiting
+            else -> R.string.viewer_not_connected to CoreR.color.text_muted
         }
         binding.factViewer.setText(viewerText)
         binding.factViewer.setTextColor(ContextCompat.getColor(this, viewerColor))
@@ -330,8 +331,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderOutcome(state: SessionState) {
-        val error = ContextCompat.getColor(this, R.color.status_error_soft)
-        val muted = ContextCompat.getColor(this, R.color.text_muted)
+        val error = ContextCompat.getColor(this, CoreR.color.status_error_soft)
+        val muted = ContextCompat.getColor(this, CoreR.color.text_muted)
         when {
             state is SessionState.Closed && state.reason == CloseReason.NEVER_CONNECTED -> showOutcome(
                 R.drawable.ic_wifi_off, error, getString(R.string.outcome_never_connected_title),
@@ -340,7 +341,7 @@ class MainActivity : AppCompatActivity() {
             state is SessionState.Closed -> showOutcome(
                 R.drawable.ic_broadcast, muted, getString(R.string.outcome_ended_title),
                 getString(R.string.outcome_ended_body, DateUtils.formatElapsedTime(state.liveDurationMillis / 1000)),
-                R.drawable.card_background
+                CoreR.drawable.card_background
             )
             state is SessionState.Error -> showOutcome(
                 R.drawable.ic_error_outline, error, getString(R.string.outcome_error_title),
