@@ -3,6 +3,7 @@ package com.layerbit.core.webrtc
 import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjection
+import android.os.SystemClock
 import com.layerbit.core.signaling.FirebaseSignalingClient
 import com.layerbit.core.signaling.RtcJson
 import com.layerbit.core.util.SessionIdGenerator
@@ -72,12 +73,31 @@ class ScreenShareHostSession(
     private var hasRemoteAnswer = false
     private val answerCandidateQueue = mutableListOf<IceCandidate>()
 
+    // Volatile: WebRTC observer callbacks arrive on its own signaling thread, not main.
+    @Volatile
     private var closed = false
 
-    // Set only on the real CONNECTED transition, never speculatively - see SessionState.Closed
-    // for why this distinction (genuinely dropped vs. never got through at all) is worth
-    // carrying all the way to the UI rather than reporting every failure as "disconnected".
-    private var everConnected = false
+    // elapsedRealtime() of the first real CONNECTED transition, never set speculatively. Drives
+    // the on-air clock, and distinguishes "the connection ended" from "it never got through"
+    // when the session closes - see SessionState.Closed.
+    @Volatile
+    private var connectedAtMillis: Long? = null
+
+    val quality: QualityProfile get() = qualityProfile
+
+    // Every state change goes through here. Once close() has run, nothing more is reported:
+    // tearing down capture fires MediaProjection.Callback.onStop(), and without this guard that
+    // late callback would overwrite whatever final state the owner had already settled on.
+    private fun emit(state: SessionState) {
+        if (!closed) listener.onStateChanged(state)
+    }
+
+    private fun endedState(reason: CloseReason? = null): SessionState.Closed {
+        val connectedAt = connectedAtMillis
+        val duration = if (connectedAt != null) SystemClock.elapsedRealtime() - connectedAt else 0L
+        val resolved = reason ?: if (connectedAt != null) CloseReason.CONNECTION_ENDED else CloseReason.NEVER_CONNECTED
+        return SessionState.Closed(viewerUrl, sessionId, resolved, duration)
+    }
 
     // Covers two distinct not-yet-Live moments with one mechanism: (1) an answer just arrived
     // and ICE is connecting for the first time, (2) a previously-Live connection just dropped
@@ -89,32 +109,32 @@ class ScreenShareHostSession(
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
             for (secondsLeft in RECONNECT_GRACE_SECONDS downTo 1) {
-                listener.onStateChanged(SessionState.Reconnecting(viewerUrl, sessionId, secondsLeft))
+                emit(SessionState.Reconnecting(viewerUrl, sessionId, secondsLeft, connectedAtMillis))
                 delay(1000)
             }
-            listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId, everConnected))
+            emit(endedState())
         }
     }
 
     /** Must be called only after the owning foreground service has called startForeground(). */
     fun start() {
-        listener.onStateChanged(SessionState.Requesting)
+        emit(SessionState.Requesting)
         try {
             initPeerConnectionFactory()
             startScreenCapture()
             createPeerConnection()
         } catch (e: Exception) {
-            listener.onStateChanged(SessionState.Error(e.message ?: "Failed to start capture"))
+            emit(SessionState.Error(e.message ?: "Failed to start capture"))
             return
         }
 
         scope.launch {
             try {
                 createAndSendOffer()
-                listener.onStateChanged(SessionState.Waiting(viewerUrl, sessionId))
+                emit(SessionState.Waiting(viewerUrl, sessionId))
                 observeSignaling()
             } catch (e: Exception) {
-                listener.onStateChanged(SessionState.Error(e.message ?: "Failed to start session"))
+                emit(SessionState.Error(e.message ?: "Failed to start session"))
             }
         }
     }
@@ -152,7 +172,7 @@ class ScreenShareHostSession(
             mediaProjectionResultData,
             object : MediaProjection.Callback() {
                 override fun onStop() {
-                    listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId, everConnected))
+                    emit(endedState(CloseReason.CAPTURE_STOPPED))
                 }
             }
         )
@@ -215,10 +235,12 @@ class ScreenShareHostSession(
                 android.util.Log.d(TAG, "onConnectionChange: $newState")
                 when (newState) {
                     PeerConnection.PeerConnectionState.CONNECTED -> {
-                        everConnected = true
+                        val connectedAt = connectedAtMillis ?: SystemClock.elapsedRealtime().also {
+                            connectedAtMillis = it
+                        }
                         reconnectJob?.cancel()
                         reconnectJob = null
-                        listener.onStateChanged(SessionState.Live(viewerUrl, sessionId))
+                        emit(SessionState.Live(viewerUrl, sessionId, connectedAt))
                     }
                     // DISCONNECTED only ever follows an established connection (per the WebRTC
                     // spec), so this is specifically the "was Live, just blipped" case - give it
@@ -229,7 +251,7 @@ class ScreenShareHostSession(
                     PeerConnection.PeerConnectionState.FAILED -> {
                         reconnectJob?.cancel()
                         reconnectJob = null
-                        listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId, everConnected))
+                        emit(endedState())
                     }
                     else -> Unit
                 }
