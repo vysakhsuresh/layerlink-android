@@ -7,13 +7,16 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.layerbit.core.overlay.FloatingStopController
 import com.layerbit.core.util.getParcelableExtraCompat
+import com.layerbit.core.webrtc.CloseReason
 import com.layerbit.core.webrtc.QualityProfile
 import com.layerbit.core.webrtc.ScreenShareHostSession
 import com.layerbit.core.webrtc.SessionState
@@ -36,12 +39,17 @@ class ScreenShareService : LifecycleService() {
     private val binder = LocalBinder()
     private var hostSession: ScreenShareHostSession? = null
     private var floatingStopController: FloatingStopController? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     private val _state = MutableStateFlow<SessionState>(SessionState.Idle)
     val state: StateFlow<SessionState> = _state.asStateFlow()
 
     val eglBaseContext: EglBase.Context?
         get() = hostSession?.eglBaseContext
+
+    /** Quality of the running session, for the activity's session facts. Null when idle. */
+    val currentQuality: QualityProfile?
+        get() = hostSession?.quality
 
     inner class LocalBinder : Binder() {
         val service: ScreenShareService get() = this@ScreenShareService
@@ -92,21 +100,51 @@ class ScreenShareService : LifecycleService() {
 
     private fun startSession(resultData: Intent, qualityProfile: QualityProfile) {
         if (hostSession != null) return
-        hostSession = ScreenShareHostSession(
+        lateinit var session: ScreenShareHostSession
+        session = ScreenShareHostSession(
             context = applicationContext,
             mediaProjectionResultData = resultData,
             scope = lifecycleScope,
             qualityProfile = qualityProfile,
             listener = object : ScreenShareHostSession.Listener {
+                // Connection-state changes arrive on WebRTC's signaling thread, but tearing down
+                // (the floating Stop overlay especially) must happen on the main thread.
                 override fun onStateChanged(newState: SessionState) {
-                    _state.value = newState
-                    if (newState is SessionState.Closed) {
-                        stopSession()
+                    if (Looper.myLooper() == Looper.getMainLooper()) {
+                        handle(newState)
+                    } else {
+                        mainHandler.post { handle(newState) }
+                    }
+                }
+
+                private fun handle(newState: SessionState) {
+                    // A late event from a session that has already been stopped or replaced
+                    // must not overwrite the current state.
+                    if (hostSession !== session) return
+                    when {
+                        // Capture stopped from Android's own UI: nothing went wrong, so the
+                        // screen simply returns to Ready.
+                        newState is SessionState.Closed && newState.reason == CloseReason.CAPTURE_STOPPED ->
+                            stopSession()
+                        // A session that ended or failed tears down *and keeps* that outcome as
+                        // the final state. Previously stopSession() always reset to Idle right
+                        // after, so the activity never got to show "Couldn't connect" at all -
+                        // and an Error never tore down at all, leaving the dead session in
+                        // place so startSession()'s guard silently blocked the next attempt.
+                        newState is SessionState.Closed || newState is SessionState.Error ->
+                            stopSession(finalState = newState)
+                        else -> _state.value = newState
                     }
                 }
             }
-        ).also { it.start() }
-        showFloatingStopControlIfPermitted()
+        )
+        // Assigned before start(), not after: start() can fail synchronously and report Error,
+        // and stopSession() has to find this session to tear it down.
+        hostSession = session
+        session.start()
+        if (hostSession === session) {
+            showFloatingStopControlIfPermitted()
+        }
     }
 
     private fun showFloatingStopControlIfPermitted() {
@@ -115,7 +153,7 @@ class ScreenShareService : LifecycleService() {
         floatingStopController = FloatingStopController(this) { stopSession() }.also { it.show() }
     }
 
-    private fun stopSession() {
+    private fun stopSession(finalState: SessionState = SessionState.Idle) {
         // Clear the reference before closing it, not after: close() is defensive about its own
         // native teardown calls, but if anything upstream of it ever threw, hostSession would be
         // left permanently non-null, and startSession()'s "already running" guard would silently
@@ -124,7 +162,7 @@ class ScreenShareService : LifecycleService() {
         hostSession = null
         floatingStopController?.hide()
         floatingStopController = null
-        _state.value = SessionState.Idle
+        _state.value = finalState
         session?.close()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()

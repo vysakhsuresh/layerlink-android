@@ -1,6 +1,8 @@
 package com.layerbit.layerlink
 
 import android.Manifest
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -9,26 +11,36 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
+import android.text.format.DateUtils
+import android.transition.AutoTransition
+import android.transition.TransitionManager
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.layerbit.core.R as CoreR
 import com.layerbit.core.brand.BrandLinks
+import com.layerbit.core.webrtc.CloseReason
 import com.layerbit.core.webrtc.QualityProfile
 import com.layerbit.core.webrtc.SessionState
 import com.layerbit.layerlink.databinding.ActivityMainBinding
+import com.layerbit.layerlink.databinding.ItemHowStepBinding
 import com.layerbit.layerlink.service.ScreenShareService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.webrtc.RendererCommon
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,13 +49,18 @@ class MainActivity : AppCompatActivity() {
     private var boundService: ScreenShareService? = null
     private var isBound = false
     private var stateJob: Job? = null
-    private var previewInitialized = false
+
+    /** Which of the four moments is on screen; a change animates, a same-moment update doesn't. */
+    private enum class Screen { READY, OUTCOME, WAITING, LIVE }
+
+    private var currentScreen: Screen? = null
+    private var currentLink: String = ""
+    private var pulseAnimator: ObjectAnimator? = null
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
             boundService = (service as ScreenShareService.LocalBinder).service
             isBound = true
-            attachPreview()
             observeState()
         }
 
@@ -83,13 +100,14 @@ class MainActivity : AppCompatActivity() {
         binding.btnStart.setOnClickListener { requestScreenCapture() }
         binding.btnStop.setOnClickListener { boundService?.stopSharing() }
         binding.btnCopy.setOnClickListener { copyLink() }
+        binding.btnCopyMini.setOnClickListener { copyLink() }
         binding.btnShare.setOnClickListener { shareLink() }
         binding.brandFooterInclude.brandFooterRow.setOnClickListener { BrandLinks.openWebsite(this) }
         binding.brandFooterInclude.btnGetHelp.setOnClickListener { BrandLinks.showGetHelpDialog(this) }
         binding.brandFooterInclude.btnBuyCoffee.setOnClickListener { BrandLinks.openCoffee(this) }
-        binding.switchDataSaver.setOnCheckedChangeListener { _, isChecked ->
-            binding.dataSaverSubtitle.isVisible = isChecked
-        }
+        bindStep(binding.step1, 1, R.string.step1_title, R.string.step1_body)
+        bindStep(binding.step2, 2, R.string.step2_title, R.string.step2_body)
+        bindStep(binding.step3, 3, R.string.step3_title, R.string.step3_body)
 
         maybeRequestNotificationPermission()
         renderState(SessionState.Idle)
@@ -104,14 +122,17 @@ class MainActivity : AppCompatActivity() {
         super.onStop()
         stateJob?.cancel()
         if (isBound) {
-            boundService?.detachRenderer(binding.previewRenderer)
             unbindService(connection)
             isBound = false
         }
-        if (previewInitialized) {
-            binding.previewRenderer.release()
-            previewInitialized = false
-        }
+        binding.liveClock.stop()
+        pulseAnimator?.cancel()
+    }
+
+    private fun bindStep(step: ItemHowStepBinding, number: Int, @StringRes title: Int, @StringRes body: Int) {
+        step.stepNumber.text = number.toString()
+        step.stepTitle.setText(title)
+        step.stepBody.setText(body)
     }
 
     private fun maybeRequestNotificationPermission() {
@@ -153,66 +174,198 @@ class MainActivity : AppCompatActivity() {
         ContextCompat.startForegroundService(this, intent)
     }
 
-    private fun attachPreview() {
-        val eglContext = boundService?.eglBaseContext ?: return
-        if (!previewInitialized) {
-            binding.previewRenderer.init(eglContext, null)
-            binding.previewRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
-            binding.previewRenderer.setMirror(false)
-            previewInitialized = true
-        }
-        boundService?.attachRenderer(binding.previewRenderer)
-    }
-
     private fun observeState() {
         stateJob?.cancel()
         val service = boundService ?: return
         stateJob = lifecycleScope.launch {
-            service.state.collect { state ->
-                // attachPreview() no-ops until the service's eglBaseContext exists, which only
-                // happens once a session is actually running - the one call made when the
-                // activity first binds (before any broadcast starts) always misses it, so the
-                // preview renderer never got initialized/attached at all, in any capture mode.
-                // Retrying on every state change catches the moment a session starts.
-                attachPreview()
-                renderState(state)
-            }
+            service.state.collect { state -> renderState(state) }
         }
     }
 
     private fun renderState(state: SessionState) {
-        binding.statusBadge.text = when (state) {
-            is SessionState.Idle -> getString(R.string.status_idle)
-            is SessionState.Requesting -> getString(R.string.status_requesting)
-            is SessionState.Waiting -> getString(R.string.status_waiting)
-            is SessionState.Reconnecting -> getString(R.string.status_reconnecting, state.secondsRemaining)
-            is SessionState.Live -> getString(R.string.status_live)
-            is SessionState.Closed -> if (state.everConnected) {
-                getString(R.string.status_closed)
-            } else {
-                getString(R.string.status_closed_never_connected)
+        val screen = when (state) {
+            is SessionState.Idle -> Screen.READY
+            is SessionState.Closed ->
+                if (state.reason == CloseReason.CAPTURE_STOPPED) Screen.READY else Screen.OUTCOME
+            is SessionState.Error -> Screen.OUTCOME
+            is SessionState.Requesting, is SessionState.Waiting -> Screen.WAITING
+            is SessionState.Reconnecting -> if (state.connectedAtMillis != null) Screen.LIVE else Screen.WAITING
+            is SessionState.Live -> Screen.LIVE
+        }
+        // Animate only when the moment changes. The reconnect countdown re-renders every
+        // second, and that must not replay a transition each tick.
+        if (screen != currentScreen && currentScreen != null) {
+            TransitionManager.beginDelayedTransition(binding.contentRoot, AutoTransition().setDuration(180))
+        }
+        currentScreen = screen
+
+        renderStatusPill(state)
+
+        binding.outcomeCard.isVisible = screen == Screen.OUTCOME
+        binding.dataSaverTile.isVisible = screen == Screen.READY || screen == Screen.OUTCOME
+        binding.btnStart.isVisible = screen == Screen.READY || screen == Screen.OUTCOME
+        binding.howItWorks.isVisible = screen == Screen.READY
+        binding.brandFooterInclude.root.isVisible = screen == Screen.READY || screen == Screen.OUTCOME
+
+        val link = when (state) {
+            is SessionState.Waiting -> state.viewerUrl
+            is SessionState.Reconnecting -> state.viewerUrl
+            is SessionState.Live -> state.viewerUrl
+            else -> null
+        }
+        if (link != null && link != currentLink) {
+            currentLink = link
+            binding.shareLinkText.text = link
+            binding.miniLinkText.text = link
+        }
+        val sessionId = when (state) {
+            is SessionState.Waiting -> state.sessionId
+            is SessionState.Reconnecting -> state.sessionId
+            is SessionState.Live -> state.sessionId
+            else -> null
+        }
+
+        binding.shareCard.isVisible = screen == Screen.WAITING && link != null
+        binding.factsCard.isVisible = (screen == Screen.WAITING || screen == Screen.LIVE) && sessionId != null
+        binding.liveClockBlock.isVisible = screen == Screen.LIVE
+        binding.miniLinkRow.isVisible = screen == Screen.LIVE
+        binding.btnStop.isVisible = screen == Screen.WAITING || screen == Screen.LIVE
+
+        if (sessionId != null) renderFacts(state, sessionId)
+        renderLiveClock(state)
+        if (screen == Screen.OUTCOME) renderOutcome(state)
+
+        val failed = (state as? SessionState.Closed)?.reason == CloseReason.NEVER_CONNECTED ||
+            state is SessionState.Error
+        binding.btnStart.setText(if (failed) R.string.btn_try_again else R.string.btn_start)
+        binding.btnStart.setIconResource(if (failed) R.drawable.ic_retry else R.drawable.ic_broadcast)
+        binding.startHint.isVisible = (state as? SessionState.Closed)?.reason == CloseReason.NEVER_CONNECTED
+    }
+
+    private fun renderStatusPill(state: SessionState) {
+        val (text, colorRes, pulsing) = when (state) {
+            is SessionState.Idle -> Triple(getString(R.string.status_idle), CoreR.color.status_idle, false)
+            is SessionState.Requesting -> Triple(getString(R.string.status_requesting), CoreR.color.status_waiting, true)
+            is SessionState.Waiting -> Triple(getString(R.string.status_waiting), CoreR.color.status_waiting, true)
+            is SessionState.Reconnecting -> Triple(
+                getString(
+                    if (state.connectedAtMillis != null) R.string.status_reconnecting else R.string.status_connecting,
+                    state.secondsRemaining
+                ),
+                CoreR.color.status_waiting,
+                true
+            )
+            is SessionState.Live -> Triple(getString(R.string.status_live), CoreR.color.status_live, true)
+            is SessionState.Closed -> when (state.reason) {
+                CloseReason.NEVER_CONNECTED -> Triple(getString(R.string.status_closed_never_connected), CoreR.color.status_error, false)
+                CloseReason.CONNECTION_ENDED -> Triple(getString(R.string.status_closed), CoreR.color.status_idle, false)
+                CloseReason.CAPTURE_STOPPED -> Triple(getString(R.string.status_idle), CoreR.color.status_idle, false)
             }
-            is SessionState.Error -> getString(R.string.status_error, state.message)
+            is SessionState.Error -> Triple(getString(R.string.status_error), CoreR.color.status_error, false)
         }
+        val color = ContextCompat.getColor(this, colorRes)
+        binding.statusText.text = text
+        binding.statusText.setTextColor(color)
+        binding.statusDot.backgroundTintList = ColorStateList.valueOf(color)
+        // Ready sits on the plain card surface; every other state gets a faint wash of its colour.
+        binding.statusPill.backgroundTintList = ColorStateList.valueOf(
+            if (colorRes == CoreR.color.status_idle) {
+                ContextCompat.getColor(this, CoreR.color.surface_dark)
+            } else {
+                ColorUtils.setAlphaComponent(color, 0x24)
+            }
+        )
+        setDotPulsing(pulsing)
+    }
 
-        val link = (state as? SessionState.Waiting)?.viewerUrl
-            ?: (state as? SessionState.Reconnecting)?.viewerUrl
-            ?: (state as? SessionState.Live)?.viewerUrl
-        if (link != null) {
-            binding.shareLinkInput.setText(link)
+    // A slow fade on the status dot while something is in progress. ObjectAnimator follows the
+    // system animator scale, so with "Remove animations" on, the dot just stays solid.
+    private fun setDotPulsing(pulsing: Boolean) {
+        if (pulsing) {
+            if (pulseAnimator?.isRunning == true) return
+            pulseAnimator = ObjectAnimator.ofFloat(binding.statusDot, View.ALPHA, 1f, 0.25f).apply {
+                duration = 850
+                repeatMode = ValueAnimator.REVERSE
+                repeatCount = ValueAnimator.INFINITE
+                start()
+            }
+        } else {
+            pulseAnimator?.cancel()
+            pulseAnimator = null
+            binding.statusDot.alpha = 1f
         }
+    }
 
-        val negotiating = state is SessionState.Waiting || state is SessionState.Reconnecting || state is SessionState.Live
-        binding.btnStart.isVisible = state is SessionState.Idle || state is SessionState.Closed || state is SessionState.Error
-        binding.dataSaverRow.isVisible = state is SessionState.Idle || state is SessionState.Closed || state is SessionState.Error
-        binding.btnStop.isVisible = state is SessionState.Requesting || negotiating
-        binding.linkContainer.isVisible = negotiating
-        binding.previewCard.isVisible = negotiating
-        binding.howToUseCard.isVisible = state is SessionState.Idle || state is SessionState.Closed || state is SessionState.Error
+    private fun renderFacts(state: SessionState, sessionId: String) {
+        binding.factSession.text = sessionId
+        val quality = boundService?.currentQuality
+            ?: if (binding.switchDataSaver.isChecked) QualityProfile.DATA_SAVER else QualityProfile.HIGH
+        binding.factQuality.setText(
+            if (quality == QualityProfile.DATA_SAVER) R.string.quality_data_saver else R.string.quality_high
+        )
+        val (viewerText, viewerColor) = when (state) {
+            is SessionState.Live -> R.string.viewer_connected to CoreR.color.status_live
+            is SessionState.Reconnecting ->
+                (if (state.connectedAtMillis != null) R.string.viewer_reconnecting else R.string.viewer_connecting) to
+                    CoreR.color.status_waiting
+            else -> R.string.viewer_not_connected to CoreR.color.text_muted
+        }
+        binding.factViewer.setText(viewerText)
+        binding.factViewer.setTextColor(ContextCompat.getColor(this, viewerColor))
+    }
+
+    private fun renderLiveClock(state: SessionState) {
+        val connectedAt = when (state) {
+            is SessionState.Live -> state.connectedAtMillis
+            is SessionState.Reconnecting -> state.connectedAtMillis
+            else -> null
+        }
+        if (connectedAt != null) {
+            // Chronometer counts from an elapsedRealtime() base, the same clock the session
+            // stamped, so the time is right even after the activity was in the background.
+            if (binding.liveClock.base != connectedAt) binding.liveClock.base = connectedAt
+            binding.liveClock.start()
+        } else {
+            binding.liveClock.stop()
+        }
+    }
+
+    private fun renderOutcome(state: SessionState) {
+        val error = ContextCompat.getColor(this, CoreR.color.status_error_soft)
+        val muted = ContextCompat.getColor(this, CoreR.color.text_muted)
+        when {
+            state is SessionState.Closed && state.reason == CloseReason.NEVER_CONNECTED -> showOutcome(
+                R.drawable.ic_wifi_off, error, getString(R.string.outcome_never_connected_title),
+                getString(R.string.outcome_never_connected_body), R.drawable.outcome_error_background
+            )
+            state is SessionState.Closed -> showOutcome(
+                R.drawable.ic_broadcast, muted, getString(R.string.outcome_ended_title),
+                getString(R.string.outcome_ended_body, DateUtils.formatElapsedTime(state.liveDurationMillis / 1000)),
+                CoreR.drawable.card_background
+            )
+            state is SessionState.Error -> showOutcome(
+                R.drawable.ic_error_outline, error, getString(R.string.outcome_error_title),
+                state.message, R.drawable.outcome_error_background
+            )
+        }
+    }
+
+    private fun showOutcome(
+        @DrawableRes icon: Int,
+        iconColor: Int,
+        title: String,
+        body: String,
+        @DrawableRes background: Int
+    ) {
+        binding.outcomeIcon.setImageResource(icon)
+        binding.outcomeIcon.imageTintList = ColorStateList.valueOf(iconColor)
+        binding.outcomeTitle.text = title
+        binding.outcomeBody.text = body
+        binding.outcomeCard.setBackgroundResource(background)
     }
 
     private fun copyLink() {
-        val link = binding.shareLinkInput.text?.toString().orEmpty()
+        val link = currentLink
         if (link.isEmpty()) return
         val clipboard = getSystemService(ClipboardManager::class.java)
         clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.app_name), link))
@@ -220,7 +373,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun shareLink() {
-        val link = binding.shareLinkInput.text?.toString().orEmpty()
+        val link = currentLink
         if (link.isEmpty()) return
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"

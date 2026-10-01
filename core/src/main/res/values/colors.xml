@@ -10,4 +10,12 @@
     <color name="status_waiting">#F59E0B</color>
     <color name="status_idle">#94A3B8</color>
     <color name="status_error">#EF4444</color>
+    <!-- One step lighter than surface_dark: controls and icon wells sitting on a card. -->
+    <color name="surface_raised">#1C2536</color>
+    <!-- Red text/icon on a dark surface where full status_error would be too loud for a
+         secondary control (the outlined Stop button, error card icons). -->
+    <color name="status_error_soft">#FCA5A5</color>
+    <color name="stop_outline">#8CEF4444</color>
+    <color name="outcome_error_fill">#12EF4444</color>
+    <color name="outcome_error_stroke">#38EF4444</color>
 </resources>

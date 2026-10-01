@@ -1,30 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LayerLink</string>
-    <string name="tagline">Secure, browser-to-browser screen broadcasting via WebRTC.</string>
+    <string name="tagline">Share your phone screen to any browser.</string>
 
     <string name="data_saver_title">Data Saver</string>
-    <string name="data_saver_subtitle">Lower resolution &amp; frame rate to save data</string>
+    <string name="data_saver_subtitle">Half resolution, 8 fps. For weak Wi-Fi or mobile data.</string>
 
-    <string name="btn_start">Initialize Broadcast</string>
-    <string name="btn_stop">Stop Broadcast</string>
-    <string name="share_link_label">Share this secure link with your viewer:</string>
+    <string name="btn_start">Start broadcast</string>
+    <string name="btn_try_again">Try again</string>
+    <string name="try_again_hint">Starts a new broadcast with a new link.</string>
+    <string name="btn_stop">Stop broadcast</string>
+
+    <string name="how_it_works_title">How it works</string>
+    <string name="step1_title">Start and allow screen capture</string>
+    <string name="step1_body">Android asks you to confirm each time.</string>
+    <string name="step2_title">Send the link</string>
+    <string name="step2_body">WhatsApp, email, anything.</string>
+    <string name="step3_title">They watch in a browser</string>
+    <string name="step3_body">No app or account on their side.</string>
+    <string name="floating_dot_note">A floating dot lets you stop from any app.</string>
+
+    <string name="share_card_title">Send this link</string>
+    <string name="share_link_button">Share link</string>
     <string name="share_link_title">Share LayerLink viewer link</string>
-    <string name="link_copied">Link copied to clipboard</string>
+    <string name="share_hint">Anyone with this link can watch while you\'re live. Send it only to the person you mean.</string>
+    <string name="copy_link">Copy link</string>
+    <string name="link_copied">Link copied</string>
+
+    <string name="on_air">on air</string>
+    <string name="fact_viewer">Viewer</string>
+    <string name="fact_quality">Quality</string>
+    <string name="fact_session">Session</string>
+    <string name="quality_high">HD · 15 fps</string>
+    <string name="quality_data_saver">Data Saver · 8 fps</string>
+    <string name="viewer_not_connected">Not connected yet</string>
+    <string name="viewer_connecting">Connecting…</string>
+    <string name="viewer_reconnecting">Reconnecting…</string>
+    <string name="viewer_connected">Connected</string>
+
     <string name="permission_denied">Screen capture permission is required to broadcast</string>
     <string name="overlay_permission_rationale">Allow LayerLink to display over other apps to show a floating Stop control while broadcasting</string>
 
-    <string name="how_to_use_title">How to Use LayerLink</string>
-    <string name="how_to_use_body">1. LayerLink needs permission to display over other apps, so it can show a floating Stop control while a broadcast is live. You will be asked for this automatically the first time you start a broadcast.\n\n2. Tap \"Initialize Broadcast\" and allow the screen-capture prompt that follows.\n\n3. Share the generated link with your viewer — copy it or use the share button.\n\n4. Status changes to \"Connection Live\" once your viewer opens the link.\n\n5. To end the session, tap \"Stop Broadcast\" in the app, or tap the small floating dot anywhere on your screen and confirm — no need to reopen the app.</string>
+    <string name="status_idle">Ready</string>
+    <string name="status_requesting">Starting…</string>
+    <string name="status_waiting">Waiting for viewer</string>
+    <string name="status_connecting">Connecting · %1$ds</string>
+    <string name="status_reconnecting">Reconnecting · %1$ds</string>
+    <string name="status_live">Live</string>
+    <string name="status_closed">Disconnected</string>
+    <string name="status_closed_never_connected">Couldn\'t connect</string>
+    <string name="status_error">Something went wrong</string>
 
-    <string name="status_idle">System Idle</string>
-    <string name="status_requesting">Starting Broadcast…</string>
-    <string name="status_waiting">Awaiting Viewer…</string>
-    <string name="status_reconnecting">Connecting… retrying in %1$ds</string>
-    <string name="status_live">Connection Live</string>
-    <string name="status_closed">Viewer Disconnected</string>
-    <string name="status_closed_never_connected">Couldn\'t connect — check your network and try again</string>
-    <string name="status_error">Error: %1$s</string>
+    <string name="outcome_never_connected_title">Your viewer couldn\'t reach you</string>
+    <string name="outcome_never_connected_body">A network between you blocked the connection. This happens most across countries and on some mobile networks.\n\nSwitching between Wi-Fi and mobile data often fixes it.</string>
+    <string name="outcome_ended_title">Broadcast ended</string>
+    <string name="outcome_ended_body">Your viewer disconnected or the connection dropped. You were live for %1$s.</string>
+    <string name="outcome_error_title">Broadcast couldn\'t start</string>
 
     <string name="notification_channel_name">LayerLink Broadcast</string>
     <string name="notification_title">LayerLink is broadcasting</string>
