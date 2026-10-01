@@ -187,7 +187,11 @@ class MainActivity : AppCompatActivity() {
             is SessionState.Waiting -> getString(R.string.status_waiting)
             is SessionState.Reconnecting -> getString(R.string.status_reconnecting, state.secondsRemaining)
             is SessionState.Live -> getString(R.string.status_live)
-            is SessionState.Closed -> getString(R.string.status_closed)
+            is SessionState.Closed -> if (state.everConnected) {
+                getString(R.string.status_closed)
+            } else {
+                getString(R.string.status_closed_never_connected)
+            }
             is SessionState.Error -> getString(R.string.status_error, state.message)
         }
 
