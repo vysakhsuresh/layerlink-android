@@ -74,6 +74,11 @@ class ScreenShareHostSession(
 
     private var closed = false
 
+    // Set only on the real CONNECTED transition, never speculatively - see SessionState.Closed
+    // for why this distinction (genuinely dropped vs. never got through at all) is worth
+    // carrying all the way to the UI rather than reporting every failure as "disconnected".
+    private var everConnected = false
+
     // Covers two distinct not-yet-Live moments with one mechanism: (1) an answer just arrived
     // and ICE is connecting for the first time, (2) a previously-Live connection just dropped
     // and might recover on its own (a brief Wi-Fi blip). Either way: count down, and only give
@@ -87,7 +92,7 @@ class ScreenShareHostSession(
                 listener.onStateChanged(SessionState.Reconnecting(viewerUrl, sessionId, secondsLeft))
                 delay(1000)
             }
-            listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId))
+            listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId, everConnected))
         }
     }
 
@@ -147,7 +152,7 @@ class ScreenShareHostSession(
             mediaProjectionResultData,
             object : MediaProjection.Callback() {
                 override fun onStop() {
-                    listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId))
+                    listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId, everConnected))
                 }
             }
         )
@@ -197,6 +202,12 @@ class ScreenShareHostSession(
 
         val observer = object : PeerConnection.Observer {
             override fun onIceCandidate(candidate: IceCandidate) {
+                // Logged by type (host/srflx/relay), not just "a candidate arrived" - this is
+                // the one line of evidence that actually tells us, after the fact, whether a
+                // failed cross-country session had a relay candidate to try at all, versus the
+                // free TURN server never answering. Without it, "didn't connect" and "TURN was
+                // down" look identical in the logs.
+                android.util.Log.d(TAG, "Local ICE candidate: ${candidateTypeOf(candidate)}")
                 signalingClient.pushOfferCandidate(sessionId, RtcJson.iceCandidateToJson(candidate))
             }
 
@@ -204,6 +215,7 @@ class ScreenShareHostSession(
                 android.util.Log.d(TAG, "onConnectionChange: $newState")
                 when (newState) {
                     PeerConnection.PeerConnectionState.CONNECTED -> {
+                        everConnected = true
                         reconnectJob?.cancel()
                         reconnectJob = null
                         listener.onStateChanged(SessionState.Live(viewerUrl, sessionId))
@@ -217,7 +229,7 @@ class ScreenShareHostSession(
                     PeerConnection.PeerConnectionState.FAILED -> {
                         reconnectJob?.cancel()
                         reconnectJob = null
-                        listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId))
+                        listener.onStateChanged(SessionState.Closed(viewerUrl, sessionId, everConnected))
                     }
                     else -> Unit
                 }
@@ -288,6 +300,7 @@ class ScreenShareHostSession(
         answerCandidatesEventSource = signalingClient.observeAnswerCandidates(sessionId) { raw ->
             try {
                 val candidate = RtcJson.iceCandidateFromJson(raw)
+                android.util.Log.d(TAG, "Remote ICE candidate: ${candidateTypeOf(candidate)}")
                 if (hasRemoteAnswer) {
                     peerConnection?.addIceCandidate(candidate)
                 } else {
@@ -298,6 +311,13 @@ class ScreenShareHostSession(
             }
         }
     }
+
+    // ICE candidate SDP lines look like "candidate:<foundation> 1 udp <priority> <ip> <port>
+    // typ host ..." (or "typ srflx" / "typ relay") - pulling that one word out turns a wall of
+    // opaque candidate dumps into the single fact that actually matters for diagnosing a failed
+    // connection: whether a relay candidate was ever offered at all.
+    private fun candidateTypeOf(candidate: IceCandidate): String =
+        Regex("""\styp\s+(\w+)""").find(candidate.sdp)?.groupValues?.get(1) ?: "unknown"
 
     /**
      * Every step here is independently guarded: if any one native WebRTC teardown call throws,

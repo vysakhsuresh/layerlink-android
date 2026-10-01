@@ -23,6 +23,7 @@
     <string name="status_reconnecting">Connecting… retrying in %1$ds</string>
     <string name="status_live">Connection Live</string>
     <string name="status_closed">Viewer Disconnected</string>
+    <string name="status_closed_never_connected">Couldn\'t connect — check your network and try again</string>
     <string name="status_error">Error: %1$s</string>
 
     <string name="notification_channel_name">LayerLink Broadcast</string>
