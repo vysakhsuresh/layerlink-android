@@ -1,0 +1,47 @@
+name: Build check
+
+# Catches the two cheapest-to-prevent, most expensive-to-discover-late regression classes
+# before they reach main: a module that no longer compiles, and lint issues severe enough
+# to fail the build (not just warn). Mirrors the build-check.yml pattern already used on
+# the layerbit-site repo - same intent (verify before merge, not after), adapted to Gradle.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+
+      - name: Compile every module (debug)
+        run: ./gradlew :app:compileDebugKotlin :core:compileDebugKotlin --no-daemon
+
+      - name: Lint (fails the build on lint-level errors, not just warnings)
+        run: ./gradlew lintDebug --no-daemon
+
+      - name: Assemble debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore
