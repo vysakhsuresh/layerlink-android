@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <defs>
+    <linearGradient id="phone" gradientUnits="userSpaceOnUse" x1="31.716" y1="30.455" x2="56.943" y2="65.773">
+      <stop offset="0" stop-color="#7DD3FC"/><stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <rect width="108" height="108" fill="#0B1120"/>
+    <path d="M61.568,54L69.557,54A6.727,6.727 0 0 1 76.284,60.727L76.284,70.818A6.727,6.727 0 0 1 69.557,77.545L51.057,77.545A6.727,6.727 0 0 1 44.33,70.818L44.33,60.727A6.727,6.727 0 0 1 51.057,54L52.318,54" fill="none" stroke="#F1F5F9" stroke-width="6.727"/>
+    <path d="M62.829,61.148L69.557,61.148" fill="none" stroke="#7DD3FC" stroke-width="2.523" stroke-linecap="round"/>
+    <path d="M39.705,65.773L39.284,65.773A7.568,7.568 0 0 1 31.716,58.204L31.716,38.023A7.568,7.568 0 0 1 39.284,30.455L49.375,30.455A7.568,7.568 0 0 1 56.943,38.023L56.943,58.204A7.568,7.568 0 0 1 49.375,65.773L48.955,65.773" fill="none" stroke="url(#phone)" stroke-width="6.727"/>
+    <path d="M42.312,36.762A2.018,2.018 0 1 1 46.348,36.762A2.018,2.018 0 1 1 42.312,36.762Z" fill="url(#phone)"/>
+  </g>
+</svg>
