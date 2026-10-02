@@ -172,7 +172,7 @@ class ScreenShareService : LifecycleService() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.notification_title))
             .setContentText(getString(R.string.notification_text))
-            .setSmallIcon(R.drawable.ic_broadcast)
+            .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
             .build()
 
