@@ -1,74 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Company-wide "Powered by Layerbit AI" footer + support actions, meant to be dropped into any
+<!-- Company-wide "Powered by Layerbit AI" footer + support links, meant to be dropped into any
      app via <include layout="@layout/view_brand_footer" android:id="@+id/..." .../> with
      width/height/constraint attributes on the include tag itself (a real root view here, not
      <merge> - View Binding's merge-flattening does not work across module boundaries, so the
      including app accesses this layout's views via the generated ViewBrandFooterBinding
      nested under the include's own id, e.g. binding.brandFooterInclude.brandFooterRow).
 
-     This used to be three stacked tiers: a 1dp full-bleed accent_main_dim rule, the brand mark,
-     then two bordered text pills side by side. That hairline was the only full-bleed rule in an
-     app whose every other boundary is a rounded card, so it read as window chrome rather than
-     content - and inside a NestedScrollView it could scroll up into mid-content where it looked
-     like a clipped card edge. Worse, two bold mirrored pills sitting under a quiet grey line and
-     directly beneath an outlined Stop button made the last thing on the screen look like a
-     decision the user owed somebody. So the rule is gone (26dp of top padding and the drop to
-     12sp text_muted do the separating), and the pills are gone too: the footer is now ONE 48dp
-     line - cup, signature, chat bubble - that reads as a calm sign-off and is ~33dp shorter than
-     what it replaces.
+     Two stacked, centred lines: the signature, then the two things a user might want from us.
 
-     The two actions are icon-only on purpose, which is only honest because both glyphs move. The
-     cup steams (three amber wisps rising and fading out of phase) so it reads as hot coffee rather
-     than an abstract shape, and three dots bounce inside the bubble in sequence, like someone
-     typing, so it reads as "someone is there". Both labels survive for screen readers and for
-     anyone who long-presses, via contentDescription plus android:tooltipText on the buttons.
+     This replaced two earlier attempts, and what both got wrong is worth recording. The first
+     was a 1dp full-bleed rule above two bordered text pills side by side - the only full-bleed
+     hairline in an app whose every other boundary is a rounded card, so it read as window
+     chrome, and two bold mirrored pills directly under the Stop button made the last thing on
+     the screen look like a decision the user owed somebody. The second replaced the pills with
+     animated icons alone, on the theory that a steaming cup needs no label. On glass it did not
+     hold up: an icon flanking each side of the signature reads as three separate objects rather
+     than one sign-off, and an unlabelled glyph asks the user to decode it at the exact moment
+     they have no reason to care. Words do not have that problem.
 
-     The root is BrandFooterLayout rather than a plain ConstraintLayout because an
-     AnimatedVectorDrawable set through android:src never starts by itself - something has to call
-     start() on it, and it has to stop again whenever the footer goes off screen or the window is
-     backgrounded. Owning that in the footer's own root keeps this a true self-contained include:
-     the host app writes no animation code at all, and MainActivity's existing
-     brandFooterInclude.root.isVisible = ... is already the trigger. Note that :app therefore needs
-     :core on its compile classpath to inflate this layout, which it has.
+     So the actions are plain text now, under the signature where a footer's small print
+     belongs. They keep their established colours - amber for the coffee, accent cyan for help -
+     because with no icon and no border, colour is the only thing left that says these two are
+     tappable, and those are already each action's colour everywhere else in the family.
 
-     Deliberately no android:tint on either ImageButton: both drawables are two-tone (amber cup,
-     cyan bubble with lighter #00F2FE dots) and a tint would collapse each of them to one colour. -->
-<com.layerbit.core.brand.BrandFooterLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     The separator is a middot rather than a pipe or a slash: it is the lightest mark that still
+     parts two phrases, and it is not mistaken for punctuation belonging to either of them. -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingStart="16dp"
     android:paddingTop="26dp"
     android:paddingEnd="16dp"
-    android:paddingBottom="18dp">
+    android:paddingBottom="12dp">
 
-    <!-- Chain head. Packed and centred, so the brand signature stays optically centred in the
-         window and the two actions sit symmetrically either side of it. -->
-    <ImageButton
-        android:id="@+id/btnBuyCoffee"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="@drawable/ripple_footer_coffee"
-        android:contentDescription="@string/core_buy_coffee"
-        android:padding="12dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/avd_coffee_steam"
-        android:tooltipText="@string/core_buy_coffee"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/brandFooterRow"
-        app:layout_constraintHorizontal_chainStyle="packed"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Untouched content: the mark and the credit line are the one part of the old footer that
-         was already right. It is wrap_content with constrainedWidth so that at large font scales
-         the TEXT gives way (maxLines + ellipsize) and the two 48dp targets never shrink. -->
+    <!-- The mark and the credit line, unchanged: the one part of every version of this footer
+         that was always right. Tapping it opens layerbit.co.in. -->
     <LinearLayout
         android:id="@+id/brandFooterRow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
         android:contentDescription="@string/core_powered_by"
@@ -77,9 +48,8 @@
         android:orientation="horizontal"
         android:padding="6dp"
         app:layout_constrainedWidth="true"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnGetHelp"
-        app:layout_constraintStart_toEndOf="@id/btnBuyCoffee"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
@@ -101,22 +71,60 @@
 
     </LinearLayout>
 
-    <!-- Help goes on the right on purpose: it mirrors layerbit.co.in's own bottom-right chat FAB,
-         it sits at the natural reading exit and under the right thumb, and of the two actions it
-         is the one somebody might actually need in a hurry. -->
-    <ImageButton
-        android:id="@+id/btnGetHelp"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="@drawable/ripple_footer_chat"
-        android:contentDescription="@string/core_get_help"
-        android:padding="12dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/avd_chat_live"
-        android:tooltipText="@string/core_get_help"
+    <!-- Each link carries its own 48dp minimum height and 10dp of side padding, so the tappable
+         box is a comfortable target even though the text itself is small. -->
+    <LinearLayout
+        android:id="@+id/brandSupportRow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/brandFooterRow"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/brandFooterRow">
 
-</com.layerbit.core.brand.BrandFooterLayout>
+        <TextView
+            android:id="@+id/btnBuyCoffee"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minHeight="48dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="@string/core_buy_coffee"
+            android:textColor="#FFC107"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:text="@string/core_link_separator"
+            android:textColor="@color/text_muted"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/btnGetHelp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minHeight="48dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="@string/core_get_help"
+            android:textColor="@color/accent_main"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

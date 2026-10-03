@@ -18,10 +18,4 @@
     <color name="stop_outline">#8CEF4444</color>
     <color name="outcome_error_fill">#12EF4444</color>
     <color name="outcome_error_stroke">#38EF4444</color>
-    <!-- The footer's two support actions lost their pill borders, so a borderless oval ripple is
-         the only press state they have left. Tinted to each action's own glyph colour - amber for
-         the cup, accent_main cyan for the chat bubble - so the feedback belongs to that icon
-         rather than reading as a generic grey touch splash. -->
-    <color name="brand_coffee_ripple">#33FFC107</color>
-    <color name="brand_chat_ripple">#3338BDF8</color>
 </resources>
