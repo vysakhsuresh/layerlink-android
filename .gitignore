@@ -10,7 +10,11 @@
 *.apk
 *.aab
 /app/build
+/core/build
 /app/release
+
+# Personal Claude Code settings (permissions etc) - machine-specific, not team config.
+.claude/settings.local.json
 
 # Real signing credentials - never commit these. Copy keystore.properties.example to
 # keystore.properties (git-ignored) and fill in your own values, and keep the .jks/.keystore
