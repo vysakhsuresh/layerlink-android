@@ -32,7 +32,7 @@
     android:paddingStart="16dp"
     android:paddingTop="26dp"
     android:paddingEnd="16dp"
-    android:paddingBottom="12dp">
+    android:paddingBottom="8dp">
 
     <!-- The mark and the credit line, unchanged: the one part of every version of this footer
          that was always right. Tapping it opens layerbit.co.in. -->
@@ -46,7 +46,10 @@
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="6dp"
+        android:paddingStart="8dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="0dp"
         app:layout_constrainedWidth="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -72,12 +75,18 @@
     </LinearLayout>
 
     <!-- Each link carries its own 48dp minimum height and 10dp of side padding, so the tappable
-         box is a comfortable target even though the text itself is small. -->
+         box is a comfortable target even though the text itself is small.
+
+         That 48dp box is also why this row needs no top margin and why the credit line above it
+         carries no bottom padding. 13sp type leaves roughly 14dp of empty box above the glyphs,
+         so any spacing added here lands on top of space the user already cannot see, and the two
+         lines drift apart for no visible reason. Closing the real padding and letting the box's
+         own slack do the separating is what keeps the pair reading as one block. The gap is
+         measured between ink, not between view bounds. -->
     <LinearLayout
         android:id="@+id/brandSupportRow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
