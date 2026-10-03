@@ -1,6 +1,7 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
 }
 
 android {
@@ -23,16 +24,18 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         // Required so view_brand_footer.xml (included from :app's activity_main.xml) gets its
         // own generated ViewBrandFooterBinding class - :app accesses it as a nested binding
         // (binding.brandFooterInclude.*) rather than relying on View Binding's <merge>
         // flattening, which does not work across module boundaries.
         viewBinding = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
     }
 }
 
