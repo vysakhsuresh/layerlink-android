@@ -29,6 +29,8 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.layerbit.core.R as CoreR
@@ -96,6 +98,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applyWindowInsets()
 
         binding.btnStart.setOnClickListener { requestScreenCapture() }
         binding.btnStop.setOnClickListener { boundService?.stopSharing() }
@@ -111,6 +114,34 @@ class MainActivity : AppCompatActivity() {
 
         maybeRequestNotificationPermission()
         renderState(SessionState.Idle)
+    }
+
+    /**
+     * Android 15 forces edge-to-edge on apps targeting SDK 35+, so this window now extends behind
+     * the status and navigation bars - which left the header colliding with the clock and clipped
+     * the Get Help / Buy me a coffee buttons under the gesture bar. Pad the scroll container by
+     * whatever the system bars (plus any display cutout) actually occupy, rather than guessing a
+     * fixed margin: clipToPadding="false" on the NestedScrollView keeps content scrolling under
+     * the bars instead of stopping short of them.
+     */
+    private fun applyWindowInsets() {
+        val scroll = binding.root
+        val baseLeft = scroll.paddingLeft
+        val baseTop = scroll.paddingTop
+        val baseRight = scroll.paddingRight
+        val baseBottom = scroll.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(scroll) { view, windowInsets ->
+            val bars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(
+                baseLeft + bars.left,
+                baseTop + bars.top,
+                baseRight + bars.right,
+                baseBottom + bars.bottom,
+            )
+            WindowInsetsCompat.CONSUMED
+        }
     }
 
     override fun onStart() {
