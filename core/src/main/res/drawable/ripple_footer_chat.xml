@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The cyan twin of ripple_footer_coffee.xml, for the chat action. Same reasoning: the pill is
+     gone, so the press state has to come from a bounded ripple, and it is tinted to this glyph's
+     own accent_main cyan. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/brand_chat_ripple">
+
+    <item android:id="@android:id/mask">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFFFF" />
+        </shape>
+    </item>
+
+</ripple>

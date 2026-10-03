@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Animated twin of ic_help.xml: the identical chat bubble outline (#38BDF8) with the three
+     inner bars (#00F2FE / #38BDF8 / #00F2FE) turned into a live typing indicator - each bar
+     rises from its base and settles again, one sixth of a cycle behind the last.
+
+     Implemented with trimPathStart rather than a group scaleY on purpose: VectorDrawable scales
+     strokeWidth by the group matrix, so scaleY="0.4" visibly thins the bar. trimPathStart only
+     shortens the stroke, so the bars keep their exact weight at every frame.
+
+     Self-contained: vector + animators inlined via AAPT inline resources. Safe on API 26+. -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="18dp"
+            android:height="18dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+
+            <path
+                android:name="bubble"
+                android:pathData="M21,15 a2,2 0 0 1 -2,2 H7 l-4,4 V5 a2,2 0 0 1 2,-2 h14 a2,2 0 0 1 2,2 Z"
+                android:fillColor="#00000000"
+                android:strokeColor="#38BDF8"
+                android:strokeWidth="2"
+                android:strokeLineJoin="round" />
+
+            <!-- Each bar is drawn top-to-bottom, so trimPathStart eats it from the top and it
+                 stays anchored to its own baseline. -->
+            <path
+                android:name="barLeft"
+                android:pathData="M8,9 v6"
+                android:fillColor="#00000000"
+                android:strokeColor="#00F2FE"
+                android:strokeWidth="1.5"
+                android:strokeLineCap="round"
+                android:trimPathStart="0.0" />
+
+            <path
+                android:name="barMid"
+                android:pathData="M11.25,7 v10"
+                android:fillColor="#00000000"
+                android:strokeColor="#38BDF8"
+                android:strokeWidth="1.5"
+                android:strokeLineCap="round"
+                android:trimPathStart="0.0" />
+
+            <path
+                android:name="barRight"
+                android:pathData="M14.5,9 v6"
+                android:fillColor="#00000000"
+                android:strokeColor="#00F2FE"
+                android:strokeWidth="1.5"
+                android:strokeLineCap="round"
+                android:trimPathStart="0.0" />
+
+        </vector>
+    </aapt:attr>
+
+    <target android:name="barLeft">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1020"
+                android:startOffset="0"
+                android:repeatCount="infinite"
+                android:repeatMode="restart"
+                android:interpolator="@android:interpolator/fast_out_slow_in">
+                <propertyValuesHolder
+                    android:propertyName="trimPathStart"
+                    android:valueType="floatType">
+                    <keyframe android:fraction="0.0" android:value="0.55" />
+                    <keyframe android:fraction="0.5" android:value="0.0" />
+                    <keyframe android:fraction="1.0" android:value="0.55" />
+                </propertyValuesHolder>
+            </objectAnimator>
+        </aapt:attr>
+    </target>
+
+    <target android:name="barMid">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1020"
+                android:startOffset="170"
+                android:repeatCount="infinite"
+                android:repeatMode="restart"
+                android:interpolator="@android:interpolator/fast_out_slow_in">
+                <propertyValuesHolder
+                    android:propertyName="trimPathStart"
+                    android:valueType="floatType">
+                    <keyframe android:fraction="0.0" android:value="0.6" />
+                    <keyframe android:fraction="0.5" android:value="0.0" />
+                    <keyframe android:fraction="1.0" android:value="0.6" />
+                </propertyValuesHolder>
+            </objectAnimator>
+        </aapt:attr>
+    </target>
+
+    <target android:name="barRight">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1020"
+                android:startOffset="340"
+                android:repeatCount="infinite"
+                android:repeatMode="restart"
+                android:interpolator="@android:interpolator/fast_out_slow_in">
+                <propertyValuesHolder
+                    android:propertyName="trimPathStart"
+                    android:valueType="floatType">
+                    <keyframe android:fraction="0.0" android:value="0.55" />
+                    <keyframe android:fraction="0.5" android:value="0.0" />
+                    <keyframe android:fraction="1.0" android:value="0.55" />
+                </propertyValuesHolder>
+            </objectAnimator>
+        </aapt:attr>
+    </target>
+
+</animated-vector>
