@@ -19,9 +19,9 @@
 
      The two actions are icon-only on purpose, which is only honest because both glyphs move. The
      cup steams (three amber wisps rising and fading out of phase) so it reads as hot coffee rather
-     than an abstract shape, and the bubble's three bars rise and settle like a typing indicator so
-     it reads as "someone is there". Both labels survive for screen readers and for anyone who
-     long-presses, via contentDescription plus android:tooltipText on the buttons themselves.
+     than an abstract shape, and three dots bounce inside the bubble in sequence, like someone
+     typing, so it reads as "someone is there". Both labels survive for screen readers and for
+     anyone who long-presses, via contentDescription plus android:tooltipText on the buttons.
 
      The root is BrandFooterLayout rather than a plain ConstraintLayout because an
      AnimatedVectorDrawable set through android:src never starts by itself - something has to call
@@ -32,7 +32,7 @@
      :core on its compile classpath to inflate this layout, which it has.
 
      Deliberately no android:tint on either ImageButton: both drawables are two-tone (amber cup,
-     cyan bubble with lighter #00F2FE bars) and a tint would collapse each of them to one colour. -->
+     cyan bubble with lighter #00F2FE dots) and a tint would collapse each of them to one colour. -->
 <com.layerbit.core.brand.BrandFooterLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -50,7 +50,7 @@
         android:layout_height="48dp"
         android:background="@drawable/ripple_footer_coffee"
         android:contentDescription="@string/core_buy_coffee"
-        android:padding="13dp"
+        android:padding="12dp"
         android:scaleType="fitCenter"
         android:src="@drawable/avd_coffee_steam"
         android:tooltipText="@string/core_buy_coffee"
@@ -67,8 +67,8 @@
         android:id="@+id/brandFooterRow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
         android:contentDescription="@string/core_powered_by"
@@ -110,7 +110,7 @@
         android:layout_height="48dp"
         android:background="@drawable/ripple_footer_chat"
         android:contentDescription="@string/core_get_help"
-        android:padding="13dp"
+        android:padding="12dp"
         android:scaleType="fitCenter"
         android:src="@drawable/avd_chat_live"
         android:tooltipText="@string/core_get_help"

@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Animated twin of ic_help.xml: the identical chat bubble outline (#38BDF8) with the three
-     inner bars (#00F2FE / #38BDF8 / #00F2FE) turned into a live typing indicator - each bar
-     rises from its base and settles again, one sixth of a cycle behind the last.
+<!-- Animated twin of ic_help.xml: the identical chat bubble outline (#38BDF8) with three dots
+     inside it that bounce in sequence, like someone typing.
 
-     Implemented with trimPathStart rather than a group scaleY on purpose: VectorDrawable scales
-     strokeWidth by the group matrix, so scaleY="0.4" visibly thins the bar. trimPathStart only
-     shortens the stroke, so the bars keep their exact weight at every frame.
+     The first version of this animated ic_help.xml's three inner BARS - strokes of three
+     different heights. On device that was unmistakably a bar chart: short, tall, medium inside a
+     rounded box is the universal analytics glyph, and no amount of animation argued it out of
+     that reading. A typing indicator is three dots of EQUAL size; the meaning lives in their
+     equality and in the rolling bounce, not in their silhouette. So the bars are gone.
+
+     The dots are filled circles rather than round-capped zero-length strokes: a zero-length
+     subpath renders as a dot only because of how the rasterizer treats caps, which is a detail
+     to lean on when there is no reason to. An explicit circle is what it looks like.
+
+     Only translateY is animated, so frame 0 is three solid dots sitting still - a complete,
+     correct chat icon for any device with "Remove animations" on, with no fallback code.
 
      Self-contained: vector + animators inlined via AAPT inline resources. Safe on API 26+. -->
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -26,90 +34,89 @@
                 android:strokeWidth="2"
                 android:strokeLineJoin="round" />
 
-            <!-- Each bar is drawn top-to-bottom, so trimPathStart eats it from the top and it
-                 stays anchored to its own baseline. -->
-            <path
-                android:name="barLeft"
-                android:pathData="M8,9 v6"
-                android:fillColor="#00000000"
-                android:strokeColor="#00F2FE"
-                android:strokeWidth="1.5"
-                android:strokeLineCap="round"
-                android:trimPathStart="0.0" />
+            <group android:name="dotLeftGroup">
+                <path
+                    android:name="dotLeft"
+                    android:pathData="M7.6,10 m-1.35,0 a1.35,1.35 0 1,0 2.7,0 a1.35,1.35 0 1,0 -2.7,0 Z"
+                    android:fillColor="#00F2FE" />
+            </group>
 
-            <path
-                android:name="barMid"
-                android:pathData="M11.25,7 v10"
-                android:fillColor="#00000000"
-                android:strokeColor="#38BDF8"
-                android:strokeWidth="1.5"
-                android:strokeLineCap="round"
-                android:trimPathStart="0.0" />
+            <group android:name="dotMidGroup">
+                <path
+                    android:name="dotMid"
+                    android:pathData="M12,10 m-1.35,0 a1.35,1.35 0 1,0 2.7,0 a1.35,1.35 0 1,0 -2.7,0 Z"
+                    android:fillColor="#00F2FE" />
+            </group>
 
-            <path
-                android:name="barRight"
-                android:pathData="M14.5,9 v6"
-                android:fillColor="#00000000"
-                android:strokeColor="#00F2FE"
-                android:strokeWidth="1.5"
-                android:strokeLineCap="round"
-                android:trimPathStart="0.0" />
+            <group android:name="dotRightGroup">
+                <path
+                    android:name="dotRight"
+                    android:pathData="M16.4,10 m-1.35,0 a1.35,1.35 0 1,0 2.7,0 a1.35,1.35 0 1,0 -2.7,0 Z"
+                    android:fillColor="#00F2FE" />
+            </group>
 
         </vector>
     </aapt:attr>
 
-    <target android:name="barLeft">
+    <!-- One hop per dot, 160ms apart, then all three rest for the back half of the cycle. The
+         rest is what makes it read as typing rather than as a loading spinner: a pause is what a
+         person does between words. -->
+
+    <target android:name="dotLeftGroup">
         <aapt:attr name="android:animation">
             <objectAnimator
-                android:duration="1020"
+                android:duration="1200"
                 android:startOffset="0"
                 android:repeatCount="infinite"
                 android:repeatMode="restart"
                 android:interpolator="@android:interpolator/fast_out_slow_in">
                 <propertyValuesHolder
-                    android:propertyName="trimPathStart"
+                    android:propertyName="translateY"
                     android:valueType="floatType">
-                    <keyframe android:fraction="0.0" android:value="0.55" />
-                    <keyframe android:fraction="0.5" android:value="0.0" />
-                    <keyframe android:fraction="1.0" android:value="0.55" />
+                    <keyframe android:fraction="0.0" android:value="0.0" />
+                    <keyframe android:fraction="0.18" android:value="-1.6" />
+                    <keyframe android:fraction="0.36" android:value="0.0" />
+                    <keyframe android:fraction="1.0" android:value="0.0" />
                 </propertyValuesHolder>
             </objectAnimator>
         </aapt:attr>
     </target>
 
-    <target android:name="barMid">
+    <target android:name="dotMidGroup">
         <aapt:attr name="android:animation">
             <objectAnimator
-                android:duration="1020"
-                android:startOffset="170"
+                android:duration="1200"
+                android:startOffset="160"
                 android:repeatCount="infinite"
                 android:repeatMode="restart"
                 android:interpolator="@android:interpolator/fast_out_slow_in">
                 <propertyValuesHolder
-                    android:propertyName="trimPathStart"
+                    android:propertyName="translateY"
                     android:valueType="floatType">
-                    <keyframe android:fraction="0.0" android:value="0.6" />
-                    <keyframe android:fraction="0.5" android:value="0.0" />
-                    <keyframe android:fraction="1.0" android:value="0.6" />
+                    <keyframe android:fraction="0.0" android:value="0.0" />
+                    <keyframe android:fraction="0.18" android:value="-1.6" />
+                    <keyframe android:fraction="0.36" android:value="0.0" />
+                    <keyframe android:fraction="1.0" android:value="0.0" />
                 </propertyValuesHolder>
             </objectAnimator>
         </aapt:attr>
     </target>
 
-    <target android:name="barRight">
+    <target android:name="dotRightGroup">
         <aapt:attr name="android:animation">
             <objectAnimator
-                android:duration="1020"
-                android:startOffset="340"
+                android:duration="1200"
+                android:startOffset="320"
                 android:repeatCount="infinite"
                 android:repeatMode="restart"
                 android:interpolator="@android:interpolator/fast_out_slow_in">
                 <propertyValuesHolder
-                    android:propertyName="trimPathStart"
+                    android:propertyName="translateY"
                     android:valueType="floatType">
-                    <keyframe android:fraction="0.0" android:value="0.55" />
-                    <keyframe android:fraction="0.5" android:value="0.0" />
-                    <keyframe android:fraction="1.0" android:value="0.55" />
+                    <keyframe android:fraction="0.0" android:value="0.0" />
+                    <keyframe android:fraction="0.18" android:value="-1.6" />
+                    <keyframe android:fraction="0.36" android:value="0.0" />
+                    <keyframe android:fraction="1.0" android:value="0.0" />
                 </propertyValuesHolder>
             </objectAnimator>
         </aapt:attr>
