@@ -20,10 +20,15 @@ Both the web pages and this app read/write the exact same Realtime Database shap
 | `answer` | viewer (browser) | `JSON.stringify({type, sdp})` of the WebRTC answer |
 | `answerCandidates/{pushId}` | viewer | one stringified ICE candidate per pushed child |
 
-Same ICE servers as the web app (`stun:stun.l.google.com:19302`,
-`stun:stun1.l.google.com:19302`), and the same ICE-candidate queueing behavior the web pages'
-changelog calls out (v1.1.0: queue remote candidates until the remote description is set) is
-replicated in `LayerLinkHostSession`.
+The same ICE-candidate queueing behavior the web pages' changelog calls out (v1.1.0: queue
+remote candidates until the remote description is set) is replicated in `LayerLinkHostSession`.
+
+ICE servers are **no longer hardcoded to match the web pages** — they are resolved at runtime
+(`IceConfig` / `IceConfigStore`): a relay set on the device, else a JSON file hosted next to the
+viewer page, else STUN only. That change exists because the relay both sides shared had stopped
+authenticating, which silently broke every cross-country share. **See [`relay/README.md`](relay/README.md)
+for what broke, what to do about it, and the matching patch for the two web pages** — until they
+read the same hosted config, they still carry the dead list.
 
 The web app never calls `firebase.auth()`, so its database rules are open read/write. Rather
 than adding a new Firebase Android app registration and `google-services.json` (which would
@@ -39,6 +44,10 @@ Two modules: `:core` holds everything reusable across future apps in the same fa
 
 ```
 core/src/main/java/com/layerbit/core/
+  webrtc/IceConfig.kt                 STUN/TURN list + the transport matrix a relay expands into
+  webrtc/IceConfigStore.kt            Resolves it: device relay -> hosted JSON -> STUN-only floor
+  webrtc/RelayProbe.kt                "Does this relay actually work?", via a relay-only ICE agent
+  webrtc/WebRtcInitializer.kt         One-time process-wide native WebRTC init
   webrtc/ScreenShareHostSession.kt    Screen capture + PeerConnection + signaling wiring.
                                        signalingClient/viewerBaseUrl default to LayerLink's own
                                        Firebase project + viewer page but can be overridden per app.

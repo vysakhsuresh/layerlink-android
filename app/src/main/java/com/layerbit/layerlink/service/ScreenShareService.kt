@@ -17,6 +17,8 @@ import androidx.lifecycle.lifecycleScope
 import com.layerbit.core.overlay.FloatingStopController
 import com.layerbit.core.util.getParcelableExtraCompat
 import com.layerbit.core.webrtc.CloseReason
+import com.layerbit.core.webrtc.IceConfig
+import com.layerbit.core.webrtc.IceConfigStore
 import com.layerbit.core.webrtc.QualityProfile
 import com.layerbit.core.webrtc.ScreenShareHostSession
 import com.layerbit.core.webrtc.SessionState
@@ -24,6 +26,7 @@ import com.layerbit.layerlink.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.webrtc.EglBase
 import org.webrtc.SurfaceViewRenderer
 
@@ -40,6 +43,10 @@ class ScreenShareService : LifecycleService() {
     private var hostSession: ScreenShareHostSession? = null
     private var floatingStopController: FloatingStopController? = null
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    /** Set while the relay list is being resolved, before the session object exists. */
+    private var isStarting = false
+    private val iceConfigStore by lazy { IceConfigStore(applicationContext) }
 
     private val _state = MutableStateFlow<SessionState>(SessionState.Idle)
     val state: StateFlow<SessionState> = _state.asStateFlow()
@@ -76,7 +83,21 @@ class ScreenShareService : LifecycleService() {
                     ?: QualityProfile.HIGH
                 if (resultCode == Activity.RESULT_OK && resultData != null) {
                     startForegroundNotification()
-                    startSession(resultData, qualityProfile)
+                    // Resolving the relay list can touch the network (see IceConfigStore), so
+                    // report Requesting straight away rather than leaving the screen on Ready
+                    // while it happens, and guard against a second ACTION_START arriving in
+                    // that window - startSession's own `hostSession != null` check can't see a
+                    // session that hasn't been constructed yet.
+                    if (!isStarting && hostSession == null) {
+                        isStarting = true
+                        _state.value = SessionState.Requesting
+                        lifecycleScope.launch {
+                            val iceConfig = runCatching { iceConfigStore.resolve() }
+                                .getOrDefault(IceConfig.builtIn)
+                            isStarting = false
+                            startSession(resultData, qualityProfile, iceConfig)
+                        }
+                    }
                 } else {
                     stopSelf()
                 }
@@ -98,7 +119,11 @@ class ScreenShareService : LifecycleService() {
         stopSession()
     }
 
-    private fun startSession(resultData: Intent, qualityProfile: QualityProfile) {
+    private fun startSession(
+        resultData: Intent,
+        qualityProfile: QualityProfile,
+        iceConfig: IceConfig
+    ) {
         if (hostSession != null) return
         lateinit var session: ScreenShareHostSession
         session = ScreenShareHostSession(
@@ -106,6 +131,7 @@ class ScreenShareService : LifecycleService() {
             mediaProjectionResultData = resultData,
             scope = lifecycleScope,
             qualityProfile = qualityProfile,
+            iceConfig = iceConfig,
             listener = object : ScreenShareHostSession.Listener {
                 // Connection-state changes arrive on WebRTC's signaling thread, but tearing down
                 // (the floating Stop overlay especially) must happen on the main thread.
@@ -154,6 +180,7 @@ class ScreenShareService : LifecycleService() {
     }
 
     private fun stopSession(finalState: SessionState = SessionState.Idle) {
+        isStarting = false
         // Clear the reference before closing it, not after: close() is defensive about its own
         // native teardown calls, but if anything upstream of it ever threw, hostSession would be
         // left permanently non-null, and startSession()'s "already running" guard would silently
