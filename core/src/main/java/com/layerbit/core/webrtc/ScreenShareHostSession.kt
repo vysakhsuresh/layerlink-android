@@ -6,12 +6,12 @@ import android.media.projection.MediaProjection
 import android.os.SystemClock
 import com.layerbit.core.signaling.FirebaseSignalingClient
 import com.layerbit.core.signaling.RtcJson
+import com.layerbit.core.signaling.SignalingSubscription
 import com.layerbit.core.util.SessionIdGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import okhttp3.sse.EventSource
 import org.webrtc.DefaultVideoDecoderFactory
 import org.webrtc.DefaultVideoEncoderFactory
 import org.webrtc.EglBase
@@ -71,10 +71,10 @@ class ScreenShareHostSession(
     var localVideoTrack: VideoTrack? = null
         private set
 
-    private var answerEventSource: EventSource? = null
-    private var answerCandidatesEventSource: EventSource? = null
+    private var answerEventSource: SignalingSubscription? = null
+    private var answerCandidatesEventSource: SignalingSubscription? = null
 
-    private var hasRemoteAnswer = false
+    @Volatile private var hasRemoteAnswer = false
     private val answerCandidateQueue = mutableListOf<IceCandidate>()
 
     // Volatile: WebRTC observer callbacks arrive on its own signaling thread, not main.
@@ -356,7 +356,12 @@ class ScreenShareHostSession(
                 try {
                     val answer = RtcJson.sessionDescriptionFromJson(raw)
                     peerConnection?.suspendSetRemoteDescription(answer)
-                    hasRemoteAnswer = true
+                    // Flip the flag and drain the queue as one step: candidates arrive on the
+                    // signaling stream's thread, and one landing mid-drain must not be lost.
+                    val queued = synchronized(answerCandidateQueue) {
+                        hasRemoteAnswer = true
+                        answerCandidateQueue.toList().also { answerCandidateQueue.clear() }
+                    }
                     // Past the share screen now; relay changes are no longer worth re-reporting.
                     waitingForViewer = false
                     // Negotiation is starting for the first time now - start the same countdown
@@ -364,8 +369,7 @@ class ScreenShareHostSession(
                     // (stuck negotiating forever) doesn't wait on ICE's own, less predictable
                     // internal timeout to eventually declare FAILED.
                     startReconnectCountdown()
-                    answerCandidateQueue.forEach { peerConnection?.addIceCandidate(it) }
-                    answerCandidateQueue.clear()
+                    queued.forEach { peerConnection?.addIceCandidate(it) }
                 } catch (e: Exception) {
                     // Malformed/late signaling payload - safe to ignore and wait for the next one.
                     android.util.Log.e(TAG, "Failed to apply remote answer", e)
@@ -377,11 +381,11 @@ class ScreenShareHostSession(
             try {
                 val candidate = RtcJson.iceCandidateFromJson(raw)
                 android.util.Log.d(TAG, "Remote ICE candidate: ${candidateTypeOf(candidate)}")
-                if (hasRemoteAnswer) {
-                    peerConnection?.addIceCandidate(candidate)
-                } else {
-                    answerCandidateQueue.add(candidate)
+                val applyNow = synchronized(answerCandidateQueue) {
+                    if (!hasRemoteAnswer) answerCandidateQueue.add(candidate)
+                    hasRemoteAnswer
                 }
+                if (applyNow) peerConnection?.addIceCandidate(candidate)
             } catch (_: Exception) {
                 // Ignore a malformed candidate rather than tearing down the whole session.
             }

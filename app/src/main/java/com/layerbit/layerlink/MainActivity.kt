@@ -123,6 +123,14 @@ class MainActivity : AppCompatActivity() {
 
         maybeRequestNotificationPermission()
         renderRelayTile()
+        // The tile renders from the cached relay config only (it must not wait on the network),
+        // so on a phone that has never broadcast it would say "Not set" even when the hosted
+        // config has a relay. Warm the cache now: the tile then tells the truth, and the first
+        // Start no longer waits on this fetch.
+        lifecycleScope.launch {
+            runCatching { iceConfigStore.resolve() }
+            renderRelayTile()
+        }
         renderState(SessionState.Idle)
     }
 
