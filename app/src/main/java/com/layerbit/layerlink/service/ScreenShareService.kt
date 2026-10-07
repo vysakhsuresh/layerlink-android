@@ -23,9 +23,11 @@ import com.layerbit.core.webrtc.QualityProfile
 import com.layerbit.core.webrtc.ScreenShareHostSession
 import com.layerbit.core.webrtc.SessionState
 import com.layerbit.layerlink.R
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.webrtc.EglBase
 import org.webrtc.SurfaceViewRenderer
@@ -46,6 +48,8 @@ class ScreenShareService : LifecycleService() {
 
     /** Set while the relay list is being resolved, before the session object exists. */
     private var isStarting = false
+    // The relay-resolving start in flight, so Stop can cancel it - see stopSession().
+    private var startJob: Job? = null
     private val iceConfigStore by lazy { IceConfigStore(applicationContext) }
 
     private val _state = MutableStateFlow<SessionState>(SessionState.Idle)
@@ -91,10 +95,16 @@ class ScreenShareService : LifecycleService() {
                     if (!isStarting && hostSession == null) {
                         isStarting = true
                         _state.value = SessionState.Requesting
-                        lifecycleScope.launch {
+                        startJob = lifecycleScope.launch {
                             val iceConfig = runCatching { iceConfigStore.resolve() }
                                 .getOrDefault(IceConfig.builtIn)
+                            // Stop was pressed while the relay list was loading. runCatching
+                            // above swallows the CancellationException, so without this check
+                            // the cancelled start would carry on and begin capturing anyway -
+                            // after the foreground service had already been stopped.
+                            if (!isActive) return@launch
                             isStarting = false
+                            startJob = null
                             startSession(resultData, qualityProfile, iceConfig)
                         }
                     }
@@ -180,6 +190,8 @@ class ScreenShareService : LifecycleService() {
     }
 
     private fun stopSession(finalState: SessionState = SessionState.Idle) {
+        startJob?.cancel()
+        startJob = null
         isStarting = false
         // Clear the reference before closing it, not after: close() is defensive about its own
         // native teardown calls, but if anything upstream of it ever threw, hostSession would be
