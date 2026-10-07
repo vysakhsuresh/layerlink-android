@@ -33,6 +33,8 @@
     <string name="relay_note_available">Relay ready — viewers on any network can connect.</string>
     <string name="relay_note_unavailable">No relay. This works only if your viewer\'s network happens to allow a direct connection.</string>
     <string name="relay_note_pending">Looking for a relay…</string>
+    <string name="attempt_note_never_connected">Your viewer couldn\'t connect. The link still works, so they can open it again to retry.</string>
+    <string name="attempt_note_ended">Your viewer left or lost the connection. They can open the same link to watch again.</string>
 
     <string name="btn_start">Start broadcast</string>
     <string name="btn_try_again">Try again</string>

@@ -444,6 +444,19 @@
                 android:textColor="@color/text_muted"
                 android:textSize="12.5sp" />
 
+            <!-- After a viewer's attempt fails or they leave, the same link is readied again;
+                 this says what happened and that they can simply reopen it. -->
+            <TextView
+                android:id="@+id/attemptNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:lineSpacingExtra="2dp"
+                android:textSize="12.5sp"
+                android:visibility="gone"
+                tools:text="@string/attempt_note_never_connected"
+                tools:visibility="visible" />
+
             <!-- Whether a relay was actually obtained for *this* broadcast, said while the link
                  is still unsent - rather than leaving the viewer to discover it by never
                  connecting. -->

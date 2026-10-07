@@ -276,6 +276,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.shareCard.isVisible = screen == Screen.WAITING && link != null
+        renderAttemptNote(state)
         renderRelayNote(state)
         binding.factsCard.isVisible = (screen == Screen.WAITING || screen == Screen.LIVE) && sessionId != null
         binding.liveClockBlock.isVisible = screen == Screen.LIVE
@@ -456,6 +457,21 @@ class MainActivity : AppCompatActivity() {
     private fun relayHostLabel(config: IceConfig): String {
         val url = config.turnServers.firstOrNull()?.urls?.firstOrNull() ?: return ""
         return url.substringAfter(':').substringBefore(':').substringBefore('?')
+    }
+
+    /** What happened to the last viewer, when the link has been readied again after one. */
+    private fun renderAttemptNote(state: SessionState) {
+        val (text, colorRes) = when ((state as? SessionState.Waiting)?.previousAttempt) {
+            CloseReason.NEVER_CONNECTED -> R.string.attempt_note_never_connected to CoreR.color.status_waiting
+            CloseReason.CONNECTION_ENDED -> R.string.attempt_note_ended to CoreR.color.text_muted
+            else -> {
+                binding.attemptNote.isVisible = false
+                return
+            }
+        }
+        binding.attemptNote.setText(text)
+        binding.attemptNote.setTextColor(ContextCompat.getColor(this, colorRes))
+        binding.attemptNote.isVisible = true
     }
 
     /** The per-broadcast relay line under the link, while the link is still being sent. */
