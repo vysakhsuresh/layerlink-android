@@ -9,11 +9,14 @@ sealed class SessionState {
      * [relay] is re-reported as ICE gathering progresses, so the share screen can say - while
      * the link is still being sent, not after the viewer has already failed - whether a relay
      * is actually available for this broadcast.
+     * [previousAttempt] is how the last viewer's connection ended when this is the link being
+     * readied again after one (null on a fresh broadcast, or once a viewer has connected).
      */
     data class Waiting(
         val viewerUrl: String,
         val sessionId: String,
-        val relay: RelayStatus = RelayStatus.PENDING
+        val relay: RelayStatus = RelayStatus.PENDING,
+        val previousAttempt: CloseReason? = null
     ) : SessionState()
     /**
      * Negotiation is underway but hasn't reached [Live] yet - either an answer just arrived and
@@ -21,7 +24,7 @@ sealed class SessionState {
      * previously-[Live] connection just dropped and might recover on its own (a brief Wi-Fi
      * blip; [connectedAtMillis] is when it first went live, so an on-air clock keeps running
      * through the blip). [secondsRemaining] counts down to 0; reaching [Live] before then
-     * cancels it silently, reaching 0 first means [Closed].
+     * cancels it silently, reaching 0 first readies the link for the next viewer ([Waiting]).
      */
     data class Reconnecting(
         val viewerUrl: String,

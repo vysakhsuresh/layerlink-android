@@ -12,6 +12,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.webrtc.DefaultVideoDecoderFactory
 import org.webrtc.DefaultVideoEncoderFactory
 import org.webrtc.EglBase
@@ -38,6 +40,14 @@ import org.webrtc.DataChannel
  * layerlink-sharer.body.html in the layerbit-site repo for the reference web implementation
  * this class mirrors, including the v1.1.0 fix of queueing remote ICE candidates until the
  * remote description is set.
+ *
+ * One link serves the whole broadcast, not one attempt. A WebRTC connection is single-use, so
+ * when an attempt fails or a viewer leaves, the session starts a new *round*: a fresh
+ * [PeerConnection] on the same running capture, and a fresh offer published over the old
+ * negotiation in one atomic write. Whoever opens (or reopens) the link next simply finds an
+ * unanswered offer. A viewer that reloads while the previous round still looks answered writes
+ * `rejoin`, which starts a new round straight away - unless a viewer is live right now, so a
+ * second person opening the link can never knock the first one off.
  */
 class ScreenShareHostSession(
     private val context: Context,
@@ -73,6 +83,34 @@ class ScreenShareHostSession(
 
     private var answerEventSource: SignalingSubscription? = null
     private var answerCandidatesEventSource: SignalingSubscription? = null
+    private var rejoinEventSource: SignalingSubscription? = null
+
+    // Applying an answer and starting a new round both rebuild negotiation state across
+    // suspension points; this keeps one from interleaving with the other.
+    private val negotiation = Mutex()
+
+    // Bumped for every PeerConnection. Callbacks from a replaced connection (it keeps firing
+    // state changes and candidates while closing) compare against this and are dropped.
+    @Volatile
+    private var generation = 0
+
+    @Volatile
+    private var isLive = false
+
+    // A rejoin that arrived while a viewer was live. If that connection drops soon after, it
+    // was almost certainly the same viewer reloading, so the new round starts at once instead
+    // of after the reconnect grace period.
+    @Volatile
+    private var rejoinRequestedAtMillis: Long? = null
+
+    // How the last round ended, shown on the share screen while waiting for the next viewer.
+    @Volatile
+    private var previousAttempt: CloseReason? = null
+
+    // A new round's local candidates are held back until its offer is published: that write
+    // clears offerCandidates, and a candidate pushed ahead of it would be wiped along with it.
+    private val heldOfferCandidates = mutableListOf<String>()
+    private var holdingOfferCandidates = false
 
     @Volatile private var hasRemoteAnswer = false
     private val answerCandidateQueue = mutableListOf<IceCandidate>()
@@ -136,8 +174,13 @@ class ScreenShareHostSession(
     private fun updateRelayStatus(next: RelayStatus) {
         if (relayStatus == next || relayStatus == RelayStatus.AVAILABLE) return
         relayStatus = next
-        if (waitingForViewer) emit(SessionState.Waiting(viewerUrl, sessionId, next))
+        if (waitingForViewer) emit(waitingState())
     }
+
+    private fun waitingState() = SessionState.Waiting(viewerUrl, sessionId, relayStatus, previousAttempt)
+
+    private fun attemptOutcome(): CloseReason =
+        if (connectedAtMillis != null) CloseReason.CONNECTION_ENDED else CloseReason.NEVER_CONNECTED
 
     private fun startReconnectCountdown() {
         reconnectJob?.cancel()
@@ -146,7 +189,7 @@ class ScreenShareHostSession(
                 emit(SessionState.Reconnecting(viewerUrl, sessionId, secondsLeft, connectedAtMillis))
                 delay(1000)
             }
-            emit(endedState())
+            startNewRound(attemptOutcome())
         }
     }
 
@@ -172,7 +215,7 @@ class ScreenShareHostSession(
                         if (relayStatus == RelayStatus.PENDING) updateRelayStatus(RelayStatus.UNAVAILABLE)
                     }
                 }
-                emit(SessionState.Waiting(viewerUrl, sessionId, relayStatus))
+                emit(waitingState())
                 observeSignaling()
             } catch (e: Exception) {
                 emit(SessionState.Error(e.message ?: "Failed to start session"))
@@ -261,8 +304,10 @@ class ScreenShareHostSession(
                 "${iceConfig.turnServers.sumOf { it.urls.size }} relay transports"
         )
 
+        val myGeneration = ++generation
         val observer = object : PeerConnection.Observer {
             override fun onIceCandidate(candidate: IceCandidate) {
+                if (myGeneration != generation) return
                 // Logged by type (host/srflx/relay), not just "a candidate arrived" - this is
                 // the one line of evidence that actually tells us, after the fact, whether a
                 // failed cross-country session had a relay candidate to try at all, versus the
@@ -271,30 +316,46 @@ class ScreenShareHostSession(
                 val type = candidateTypeOf(candidate)
                 android.util.Log.d(TAG, "Local ICE candidate: $type (via ${candidate.serverUrl})")
                 if (type == "relay") updateRelayStatus(RelayStatus.AVAILABLE)
-                signalingClient.pushOfferCandidate(sessionId, RtcJson.iceCandidateToJson(candidate))
+                val json = RtcJson.iceCandidateToJson(candidate)
+                val held = synchronized(heldOfferCandidates) {
+                    if (holdingOfferCandidates) heldOfferCandidates.add(json)
+                    holdingOfferCandidates
+                }
+                if (!held) signalingClient.pushOfferCandidate(sessionId, json)
             }
 
             override fun onConnectionChange(newState: PeerConnection.PeerConnectionState) {
-                android.util.Log.d(TAG, "onConnectionChange: $newState")
+                android.util.Log.d(TAG, "onConnectionChange: $newState (round $myGeneration)")
+                if (myGeneration != generation) return
                 when (newState) {
                     PeerConnection.PeerConnectionState.CONNECTED -> {
                         val connectedAt = connectedAtMillis ?: SystemClock.elapsedRealtime().also {
                             connectedAtMillis = it
                         }
+                        isLive = true
+                        previousAttempt = null
                         reconnectJob?.cancel()
                         reconnectJob = null
                         emit(SessionState.Live(viewerUrl, sessionId, connectedAt))
                     }
                     // DISCONNECTED only ever follows an established connection (per the WebRTC
                     // spec), so this is specifically the "was Live, just blipped" case - give it
-                    // a grace window instead of killing the session on the first hiccup.
-                    PeerConnection.PeerConnectionState.DISCONNECTED -> startReconnectCountdown()
+                    // a grace window instead of giving up on the first hiccup. Unless the viewer
+                    // just asked to rejoin: then this is them reloading, and waiting is pointless.
+                    PeerConnection.PeerConnectionState.DISCONNECTED -> {
+                        isLive = false
+                        val rejoinAt = rejoinRequestedAtMillis
+                        if (rejoinAt != null && SystemClock.elapsedRealtime() - rejoinAt < REJOIN_WINDOW_MILLIS) {
+                            startNewRound(null)
+                        } else {
+                            startReconnectCountdown()
+                        }
+                    }
                     // FAILED means the ICE agent itself already gave up after its own internal
                     // retries - no additional grace period on top of that.
                     PeerConnection.PeerConnectionState.FAILED -> {
-                        reconnectJob?.cancel()
-                        reconnectJob = null
-                        emit(endedState())
+                        isLive = false
+                        startNewRound(attemptOutcome())
                     }
                     else -> Unit
                 }
@@ -352,28 +413,9 @@ class ScreenShareHostSession(
         answerEventSource = signalingClient.observeAnswer(sessionId) { raw ->
             if (raw == null || hasRemoteAnswer) return@observeAnswer
             android.util.Log.d(TAG, "Answer received for session $sessionId")
+            val answeredGeneration = generation
             scope.launch {
-                try {
-                    val answer = RtcJson.sessionDescriptionFromJson(raw)
-                    peerConnection?.suspendSetRemoteDescription(answer)
-                    // Flip the flag and drain the queue as one step: candidates arrive on the
-                    // signaling stream's thread, and one landing mid-drain must not be lost.
-                    val queued = synchronized(answerCandidateQueue) {
-                        hasRemoteAnswer = true
-                        answerCandidateQueue.toList().also { answerCandidateQueue.clear() }
-                    }
-                    // Past the share screen now; relay changes are no longer worth re-reporting.
-                    waitingForViewer = false
-                    // Negotiation is starting for the first time now - start the same countdown
-                    // used for a post-Live blip, so a connection that never completes at all
-                    // (stuck negotiating forever) doesn't wait on ICE's own, less predictable
-                    // internal timeout to eventually declare FAILED.
-                    startReconnectCountdown()
-                    queued.forEach { peerConnection?.addIceCandidate(it) }
-                } catch (e: Exception) {
-                    // Malformed/late signaling payload - safe to ignore and wait for the next one.
-                    android.util.Log.e(TAG, "Failed to apply remote answer", e)
-                }
+                negotiation.withLock { applyAnswer(raw, answeredGeneration) }
             }
         }
 
@@ -390,6 +432,109 @@ class ScreenShareHostSession(
                 // Ignore a malformed candidate rather than tearing down the whole session.
             }
         }
+
+        rejoinEventSource = signalingClient.observeRejoin(sessionId) { token ->
+            if (token == null) return@observeRejoin
+            android.util.Log.d(TAG, "Viewer asked to rejoin session $sessionId")
+            when {
+                // The current offer is still unanswered, so the viewer will find it on its own.
+                !hasRemoteAnswer -> Unit
+                // Someone is watching right now. Never cut them off for a second visitor; if
+                // this was them reloading, their connection drops in a moment and that starts
+                // the new round (see DISCONNECTED).
+                isLive -> rejoinRequestedAtMillis = SystemClock.elapsedRealtime()
+                else -> startNewRound(null)
+            }
+        }
+    }
+
+    private suspend fun applyAnswer(raw: String, answeredGeneration: Int) {
+        // A new round started after this answer was read: it answers an offer that's gone.
+        if (closed || hasRemoteAnswer || answeredGeneration != generation) return
+        try {
+            val answer = RtcJson.sessionDescriptionFromJson(raw)
+            peerConnection?.suspendSetRemoteDescription(answer)
+            // Flip the flag and drain the queue as one step: candidates arrive on the
+            // signaling stream's thread, and one landing mid-drain must not be lost.
+            val queued = synchronized(answerCandidateQueue) {
+                hasRemoteAnswer = true
+                answerCandidateQueue.toList().also { answerCandidateQueue.clear() }
+            }
+            // Past the share screen now; relay changes are no longer worth re-reporting.
+            waitingForViewer = false
+            // Negotiation is starting for the first time now - start the same countdown
+            // used for a post-Live blip, so a connection that never completes at all
+            // (stuck negotiating forever) doesn't wait on ICE's own, less predictable
+            // internal timeout to eventually declare FAILED.
+            startReconnectCountdown()
+            queued.forEach { peerConnection?.addIceCandidate(it) }
+        } catch (e: Exception) {
+            // Malformed/late signaling payload - safe to ignore and wait for the next one.
+            android.util.Log.e(TAG, "Failed to apply remote answer", e)
+        }
+    }
+
+    /**
+     * Gets the link ready for the next viewer: a fresh PeerConnection on the same capture, and
+     * a fresh offer that replaces the previous negotiation. [outcome] is how the previous round
+     * ended, for the share screen; null keeps whatever it already says (a rejoin isn't news).
+     */
+    private fun startNewRound(outcome: CloseReason?) {
+        // Claimed synchronously, so the countdown and a FAILED arriving together start one
+        // round between them, not two.
+        val roundOf = generation
+        reconnectJob?.cancel()
+        reconnectJob = null
+        scope.launch {
+            negotiation.withLock {
+                if (closed || roundOf != generation) return@withLock
+                if (outcome != null) previousAttempt = outcome
+                try {
+                    publishNewRound()
+                } catch (e: Exception) {
+                    android.util.Log.e(TAG, "Failed to start a new round", e)
+                    emit(SessionState.Error(e.message ?: "Failed to get ready for the next viewer"))
+                }
+            }
+        }
+    }
+
+    private suspend fun publishNewRound() {
+        isLive = false
+        rejoinRequestedAtMillis = null
+        connectedAtMillis = null
+        synchronized(answerCandidateQueue) {
+            hasRemoteAnswer = false
+            answerCandidateQueue.clear()
+        }
+        synchronized(heldOfferCandidates) {
+            holdingOfferCandidates = true
+            heldOfferCandidates.clear()
+        }
+        // Back on the share screen right away; the new offer follows in a moment.
+        waitingForViewer = true
+        emit(waitingState())
+
+        val previous = peerConnection
+        createPeerConnection()
+        runCatching { previous?.close() }
+
+        val pc = peerConnection ?: error("Peer connection not initialized")
+        val offer = pc.suspendCreateOffer(MediaConstraints())
+        pc.suspendSetLocalDescription(offer)
+        val offerJson = RtcJson.sessionDescriptionToJson(offer)
+        // Keep trying while the network is down: the link is useless until this lands.
+        while (!closed && !signalingClient.publishNewOffer(sessionId, offerJson)) {
+            delay(PUBLISH_RETRY_MILLIS)
+        }
+        // Stopped mid-publish: close() already deleted the session, so push nothing more.
+        if (closed) return
+        val held = synchronized(heldOfferCandidates) {
+            holdingOfferCandidates = false
+            heldOfferCandidates.toList().also { heldOfferCandidates.clear() }
+        }
+        held.forEach { signalingClient.pushOfferCandidate(sessionId, it) }
+        android.util.Log.d(TAG, "Round $generation offer published for session $sessionId")
     }
 
     // ICE candidate SDP lines look like "candidate:<foundation> 1 udp <priority> <ip> <port>
@@ -415,6 +560,7 @@ class ScreenShareHostSession(
         runCatching { relayDeadlineJob?.cancel() }
         runCatching { answerEventSource?.cancel() }
         runCatching { answerCandidatesEventSource?.cancel() }
+        runCatching { rejoinEventSource?.cancel() }
         runCatching { signalingClient.deleteSession(sessionId) }
 
         runCatching { peerConnection?.close() }
@@ -441,6 +587,8 @@ class ScreenShareHostSession(
         private const val DATA_SAVER_FPS = 8
         private const val DATA_SAVER_MAX_BITRATE_BPS = 400_000
         private const val RECONNECT_GRACE_SECONDS = 35
+        private const val REJOIN_WINDOW_MILLIS = 30_000L
+        private const val PUBLISH_RETRY_MILLIS = 5_000L
         // Same budget RelayProbe gives the Test button: TLS relays across a continent can take
         // several seconds to allocate, but not this long.
         private const val RELAY_DEADLINE_MILLIS = 12_000L

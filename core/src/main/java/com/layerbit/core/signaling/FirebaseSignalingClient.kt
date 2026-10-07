@@ -4,6 +4,8 @@ import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -28,6 +30,7 @@ interface SignalingSubscription {
  *
  *  - `offer` / `answer`            -> a single string node holding `JSON.stringify(description)`
  *  - `offerCandidates` / `answerCandidates` -> a list of pushed string nodes, one per ICE candidate
+ *  - `rejoin`                      -> a random token a returning viewer writes to ask for a fresh offer
  *
  * The web app never authenticates (no `firebase.auth()` call anywhere in the sharer/viewer
  * pages), so the database rules are open read/write for this project - this client relies on
@@ -73,12 +76,43 @@ class FirebaseSignalingClient(
         send(Request.Builder().url(nodeUrl(sessionId, null)).delete().build())
     }
 
+    /**
+     * Replaces the session's negotiation with a new one in a single atomic update: the new offer
+     * goes in, and the previous answer, both candidate lists and any rejoin request go out. Done
+     * as one write so a viewer opening the link mid-way can never see the new offer next to the
+     * old answer (and conclude someone is already connected), or the old offer with no answer
+     * (and answer an offer that no longer exists). Suspends until the write lands; returns false
+     * if it still failed after retries.
+     */
+    suspend fun publishNewOffer(sessionId: String, offerJson: String): Boolean {
+        val update = JSONObject()
+            .put("offer", offerJson)
+            .put("answer", JSONObject.NULL)
+            .put("answerCandidates", JSONObject.NULL)
+            .put("offerCandidates", JSONObject.NULL)
+            .put("rejoin", JSONObject.NULL)
+        val request = Request.Builder()
+            .url(nodeUrl(sessionId, null))
+            .patch(update.toString().toRequestBody(JSON_MEDIA_TYPE))
+            .build()
+        return suspendCancellableCoroutine { continuation ->
+            send(request) { ok -> if (continuation.isActive) continuation.resume(ok) }
+        }
+    }
+
     /** Mirrors `conn.child("answer").on("value", ...)`. Invokes [onValue] with `null` while unset. */
-    fun observeAnswer(sessionId: String, onValue: (String?) -> Unit): SignalingSubscription {
+    fun observeAnswer(sessionId: String, onValue: (String?) -> Unit): SignalingSubscription =
+        observeValue(sessionId, "answer", onValue)
+
+    /** A viewer reopening the link writes a fresh token here to ask for a new offer. */
+    fun observeRejoin(sessionId: String, onValue: (String?) -> Unit): SignalingSubscription =
+        observeValue(sessionId, "rejoin", onValue)
+
+    private fun observeValue(sessionId: String, child: String, onValue: (String?) -> Unit): SignalingSubscription {
         // A reconnect replays the node's current value; only pass on actual changes.
         var lastValue: String? = null
         var delivered = false
-        return ResilientStream(nodeUrl(sessionId, "answer")) { payload ->
+        return ResilientStream(nodeUrl(sessionId, child)) { payload ->
             if (payload.optString("path", "/") != "/") return@ResilientStream
             val value = if (payload.isNull("data")) null else payload.optString("data")
             if (delivered && value == lastValue) return@ResilientStream
@@ -116,20 +150,33 @@ class FirebaseSignalingClient(
         return "$databaseUrl/sessions/$sessionId$suffix.json"
     }
 
-    /** Fire-and-forget write, retried on network failure or a server error. */
-    private fun send(request: Request, attempt: Int = 1) {
+    /**
+     * A write, retried on network failure or a server error. [onDone] (optional) hears once
+     * whether it finally landed.
+     */
+    private fun send(request: Request, attempt: Int = 1, onDone: ((Boolean) -> Unit)? = null) {
         writeClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) = retry()
 
             override fun onResponse(call: Call, response: Response) {
-                val serverError = response.code >= 500
+                val code = response.code
                 response.close()
-                if (serverError) retry()
+                when {
+                    code >= 500 -> retry()
+                    else -> onDone?.invoke(code in 200..299)
+                }
             }
 
             private fun retry() {
-                if (attempt >= MAX_WRITE_ATTEMPTS) return
-                scheduler.schedule({ send(request, attempt + 1) }, attempt * WRITE_RETRY_STEP_MILLIS, TimeUnit.MILLISECONDS)
+                if (attempt >= MAX_WRITE_ATTEMPTS) {
+                    onDone?.invoke(false)
+                    return
+                }
+                scheduler.schedule(
+                    { send(request, attempt + 1, onDone) },
+                    attempt * WRITE_RETRY_STEP_MILLIS,
+                    TimeUnit.MILLISECONDS
+                )
             }
         })
     }
