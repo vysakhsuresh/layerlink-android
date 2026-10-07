@@ -117,6 +117,13 @@ class ScreenShareHostSession(
     // up for real - closing the session - if CONNECTED is never reached before it hits zero.
     private var reconnectJob: Job? = null
 
+    // Gathering runs continually (see createPeerConnection), and under GATHER_CONTINUALLY
+    // WebRTC never reports gathering COMPLETE - so the COMPLETE check below can never mark a
+    // dead relay UNAVAILABLE on its own, and the share screen would say "checking the relay"
+    // for the life of the session. This deadline is what actually reaches a verdict: a relay
+    // that hasn't produced a candidate in this long isn't going to.
+    private var relayDeadlineJob: Job? = null
+
     // True between the offer going out and an answer arriving - the only window in which a
     // relay-status change is worth re-reporting, because that is the screen showing the link.
     @Volatile
@@ -159,6 +166,12 @@ class ScreenShareHostSession(
             try {
                 createAndSendOffer()
                 waitingForViewer = true
+                if (iceConfig.hasRelay) {
+                    relayDeadlineJob = scope.launch {
+                        delay(RELAY_DEADLINE_MILLIS)
+                        if (relayStatus == RelayStatus.PENDING) updateRelayStatus(RelayStatus.UNAVAILABLE)
+                    }
+                }
                 emit(SessionState.Waiting(viewerUrl, sessionId, relayStatus))
                 observeSignaling()
             } catch (e: Exception) {
@@ -395,6 +408,7 @@ class ScreenShareHostSession(
         waitingForViewer = false
 
         runCatching { reconnectJob?.cancel() }
+        runCatching { relayDeadlineJob?.cancel() }
         runCatching { answerEventSource?.cancel() }
         runCatching { answerCandidatesEventSource?.cancel() }
         runCatching { signalingClient.deleteSession(sessionId) }
@@ -423,6 +437,9 @@ class ScreenShareHostSession(
         private const val DATA_SAVER_FPS = 8
         private const val DATA_SAVER_MAX_BITRATE_BPS = 400_000
         private const val RECONNECT_GRACE_SECONDS = 35
+        // Same budget RelayProbe gives the Test button: TLS relays across a continent can take
+        // several seconds to allocate, but not this long.
+        private const val RELAY_DEADLINE_MILLIS = 12_000L
         const val DEFAULT_VIEWER_BASE_URL = "https://layerbit.co.in/tools/layerlink-viewer.html"
     }
 }

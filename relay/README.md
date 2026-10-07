@@ -76,6 +76,9 @@ That is enough to fix the phone in your hand, with no new build.
 
 ### 3. Publish `layerlink-ice.json` so every client gets it
 
+**Done** in layerbit-site#32: `https://layerbit.co.in/tools/layerlink-ice.json` is live with an ExpressTURN relay. To rotate the relay later, edit that file in the `layerbit-site` repo.
+
+
 Edit `layerlink-ice.json` in this directory with your relay and upload it to
 `https://layerbit.co.in/tools/layerlink-ice.json`. The app already fetches it (cached 6 hours,
 falling back to the last good copy, then to STUN-only), so from then on the relay can be
@@ -85,6 +88,9 @@ A device relay set in step 2 takes priority over this file, so clear it if you w
 follow the hosted config.
 
 ### 4. Patch the two web pages
+
+**Done** in layerbit-site#32: both pages now load the hosted file at runtime with the transport matrix below. The viewer also no longer auto-reloads into a dead session, since a reload sends a second answer that this app ignores.
+
 
 Both pages still carry the dead hardcoded list, and the viewer is the other half of every
 session. In the `layerbit-site` repo, `layerlink-sharer.body.html` (~line 626) and
