@@ -6,6 +6,34 @@
     <string name="data_saver_title">Data Saver</string>
     <string name="data_saver_subtitle">Half resolution, 8 fps. For weak Wi-Fi or mobile data.</string>
 
+    <string name="relay_title">Relay server</string>
+    <string name="relay_none_subtitle">Not set. Viewers on another network or in another country may never connect.</string>
+    <string name="relay_device_subtitle">%1$s · set on this phone</string>
+    <string name="relay_remote_subtitle">%1$s · from layerbit.co.in</string>
+    <string name="relay_set_up">Set up</string>
+    <string name="relay_change">Change</string>
+
+    <string name="relay_dialog_title">Relay server</string>
+    <string name="relay_dialog_body">A relay carries the video when the two phones can\'t reach each other directly — which is normal between countries and on most mobile networks. Without one, a share only works when both sides happen to sit on friendly networks.</string>
+    <string name="relay_dialog_provider">Any TURN server works. A free one takes about a minute to create — expressturn.com, metered.ca or Cloudflare all give you a host, a username and a password to paste below.</string>
+    <string name="relay_field_host">Host — e.g. relay1.expressturn.com</string>
+    <string name="relay_field_username">Username</string>
+    <string name="relay_field_password">Password</string>
+    <string name="relay_test">Test</string>
+    <string name="relay_save">Save</string>
+    <string name="relay_remove">Remove</string>
+    <string name="relay_fields_missing">Fill in the host, username and password first.</string>
+    <string name="relay_testing">Testing the relay over UDP, TCP and TLS…</string>
+    <string name="relay_test_working">Relay works. Reached it via %1$s.</string>
+    <string name="relay_test_rejected">No relay. The host, username or password is wrong, or this network blocks every way in.</string>
+    <string name="relay_test_unavailable">Couldn\'t run the check: %1$s</string>
+    <string name="relay_saved">Relay saved</string>
+    <string name="relay_removed">Relay removed</string>
+
+    <string name="relay_note_available">Relay ready — viewers on any network can connect.</string>
+    <string name="relay_note_unavailable">No relay. This works only if your viewer\'s network happens to allow a direct connection.</string>
+    <string name="relay_note_pending">Looking for a relay…</string>
+
     <string name="btn_start">Start broadcast</string>
     <string name="btn_try_again">Try again</string>
     <string name="try_again_hint">Starts a new broadcast with a new link.</string>
@@ -53,6 +81,10 @@
 
     <string name="outcome_never_connected_title">Your viewer couldn\'t reach you</string>
     <string name="outcome_never_connected_body">A network between you blocked the connection. This happens most across countries and on some mobile networks.\n\nSwitching between Wi-Fi and mobile data often fixes it.</string>
+    <!-- Shown instead of the above when the session knew it had no relay: that is the cause,
+         and no amount of switching networks will fix it. -->
+    <string name="outcome_no_relay_title">No relay, so no connection</string>
+    <string name="outcome_no_relay_body">Your phone and your viewer are on networks that can\'t reach each other directly, which is normal between countries.\n\nSet up a relay server and this will work. Tap Relay server below.</string>
     <string name="outcome_ended_title">Broadcast ended</string>
     <string name="outcome_ended_body">Your viewer disconnected or the connection dropped. You were live for %1$s.</string>
     <string name="outcome_error_title">Broadcast couldn\'t start</string>

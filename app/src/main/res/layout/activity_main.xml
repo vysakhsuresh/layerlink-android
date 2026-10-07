@@ -189,6 +189,73 @@
 
         </LinearLayout>
 
+        <!-- Relay server: the one setting that decides whether a viewer on an unrelated network
+             (another country, another carrier) can connect at all. Tappable, because a relay
+             that stops working must be fixable here rather than in a new app release. -->
+        <LinearLayout
+            android:id="@+id/relayTile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="12dp">
+
+            <ImageView
+                android:id="@+id/relayIcon"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/icon_well_background"
+                android:contentDescription="@null"
+                android:padding="8dp"
+                android:src="@drawable/ic_relay"
+                app:tint="@color/text_muted" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/relay_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/relaySubtitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:lineSpacingExtra="1dp"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12.5sp"
+                    tools:text="@string/relay_none_subtitle" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/relayAction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/relay_set_up"
+                android:textColor="@color/accent_main"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStart"
             android:layout_width="match_parent"
@@ -376,6 +443,22 @@
                 android:text="@string/share_hint"
                 android:textColor="@color/text_muted"
                 android:textSize="12.5sp" />
+
+            <!-- Whether a relay was actually obtained for *this* broadcast, said while the link
+                 is still unsent - rather than leaving the viewer to discover it by never
+                 connecting. -->
+            <TextView
+                android:id="@+id/relayNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:drawablePadding="7dp"
+                android:gravity="center_vertical"
+                android:lineSpacingExtra="2dp"
+                android:textSize="12.5sp"
+                android:visibility="gone"
+                tools:text="@string/relay_note_unavailable"
+                tools:visibility="visible" />
 
         </LinearLayout>
 

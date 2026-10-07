@@ -1,0 +1,25 @@
+<!-- Two peers and the relay between them: the hop that makes a cross-network share possible. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- the relay itself -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,8.6a3.4,3.4 0 1,0 0,6.8a3.4,3.4 0 1,0 0,-6.8z" />
+    <!-- the two peers -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3.4,10a2,2 0 1,0 0,4a2,2 0 1,0 0,-4z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M20.6,10a2,2 0 1,0 0,4a2,2 0 1,0 0,-4z" />
+    <!-- the two legs of the relayed path -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M5.9,11.2h2.3v1.6h-2.3z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M15.8,11.2h2.3v1.6h-2.3z" />
+</vector>

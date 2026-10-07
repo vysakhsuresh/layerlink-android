@@ -46,7 +46,11 @@ class ScreenShareHostSession(
     private val listener: Listener,
     private val signalingClient: FirebaseSignalingClient = FirebaseSignalingClient(),
     private val viewerBaseUrl: String = DEFAULT_VIEWER_BASE_URL,
-    private val qualityProfile: QualityProfile = QualityProfile.HIGH
+    private val qualityProfile: QualityProfile = QualityProfile.HIGH,
+    // Resolved by the owner (ScreenShareService) through IceConfigStore, not built here, so a
+    // relay can be changed on the device or on the website without an app release. The default
+    // is the STUN-only floor, which keeps this class usable standalone.
+    private val iceConfig: IceConfig = IceConfig.builtIn
 ) {
     interface Listener {
         fun onStateChanged(state: SessionState)
@@ -83,7 +87,15 @@ class ScreenShareHostSession(
     @Volatile
     private var connectedAtMillis: Long? = null
 
+    // Updated from WebRTC's signaling thread as candidates arrive, read when emitting state.
+    @Volatile
+    private var relayStatus: RelayStatus =
+        if (iceConfig.hasRelay) RelayStatus.PENDING else RelayStatus.NOT_CONFIGURED
+
     val quality: QualityProfile get() = qualityProfile
+
+    /** What this session knows about its relay right now. */
+    val relay: RelayStatus get() = relayStatus
 
     // Every state change goes through here. Once close() has run, nothing more is reported:
     // tearing down capture fires MediaProjection.Callback.onStop(), and without this guard that
@@ -96,7 +108,7 @@ class ScreenShareHostSession(
         val connectedAt = connectedAtMillis
         val duration = if (connectedAt != null) SystemClock.elapsedRealtime() - connectedAt else 0L
         val resolved = reason ?: if (connectedAt != null) CloseReason.CONNECTION_ENDED else CloseReason.NEVER_CONNECTED
-        return SessionState.Closed(viewerUrl, sessionId, resolved, duration)
+        return SessionState.Closed(viewerUrl, sessionId, resolved, duration, relayStatus)
     }
 
     // Covers two distinct not-yet-Live moments with one mechanism: (1) an answer just arrived
@@ -104,6 +116,28 @@ class ScreenShareHostSession(
     // and might recover on its own (a brief Wi-Fi blip). Either way: count down, and only give
     // up for real - closing the session - if CONNECTED is never reached before it hits zero.
     private var reconnectJob: Job? = null
+
+    // Gathering runs continually (see createPeerConnection), and under GATHER_CONTINUALLY
+    // WebRTC never reports gathering COMPLETE - so the COMPLETE check below can never mark a
+    // dead relay UNAVAILABLE on its own, and the share screen would say "checking the relay"
+    // for the life of the session. This deadline is what actually reaches a verdict: a relay
+    // that hasn't produced a candidate in this long isn't going to.
+    private var relayDeadlineJob: Job? = null
+
+    // True between the offer going out and an answer arriving - the only window in which a
+    // relay-status change is worth re-reporting, because that is the screen showing the link.
+    @Volatile
+    private var waitingForViewer = false
+
+    /**
+     * Relay status only ever moves forward: once a relay candidate has been allocated, a later
+     * "gathering complete" must not walk it back to [RelayStatus.UNAVAILABLE].
+     */
+    private fun updateRelayStatus(next: RelayStatus) {
+        if (relayStatus == next || relayStatus == RelayStatus.AVAILABLE) return
+        relayStatus = next
+        if (waitingForViewer) emit(SessionState.Waiting(viewerUrl, sessionId, next))
+    }
 
     private fun startReconnectCountdown() {
         reconnectJob?.cancel()
@@ -131,7 +165,14 @@ class ScreenShareHostSession(
         scope.launch {
             try {
                 createAndSendOffer()
-                emit(SessionState.Waiting(viewerUrl, sessionId))
+                waitingForViewer = true
+                if (iceConfig.hasRelay) {
+                    relayDeadlineJob = scope.launch {
+                        delay(RELAY_DEADLINE_MILLIS)
+                        if (relayStatus == RelayStatus.PENDING) updateRelayStatus(RelayStatus.UNAVAILABLE)
+                    }
+                }
+                emit(SessionState.Waiting(viewerUrl, sessionId, relayStatus))
                 observeSignaling()
             } catch (e: Exception) {
                 emit(SessionState.Error(e.message ?: "Failed to start session"))
@@ -140,10 +181,7 @@ class ScreenShareHostSession(
     }
 
     private fun initPeerConnectionFactory() {
-        PeerConnectionFactory.initialize(
-            PeerConnectionFactory.InitializationOptions.builder(context.applicationContext)
-                .createInitializationOptions()
-        )
+        WebRtcInitializer.ensureInitialized(context)
         peerConnectionFactory = PeerConnectionFactory.builder()
             .setVideoEncoderFactory(DefaultVideoEncoderFactory(eglBase.eglBaseContext, true, true))
             .setVideoDecoderFactory(DefaultVideoDecoderFactory(eglBase.eglBaseContext))
@@ -197,37 +235,42 @@ class ScreenShareHostSession(
         // either peer sits behind a NAT that blocks direct/hole-punched traffic (symmetric NAT,
         // CGNAT on mobile data, restrictive Wi-Fi router ACLs). That combination is common enough
         // that the host and viewer can each report "waiting"/"searching" forever with no error,
-        // since ICE just never finds a working candidate pair. A TURN relay fallback (matching
-        // the one added to layerlink-sharer.html/layerlink-viewer.html) fixes that by giving both
-        // sides a relayed path when a direct one isn't possible.
-        val iceServers = listOf(
-            PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
-            PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer(),
-            PeerConnection.IceServer.builder("turn:openrelay.metered.ca:80")
-                .setUsername("openrelayproject")
-                .setPassword("openrelayproject")
-                .createIceServer(),
-            PeerConnection.IceServer.builder("turn:openrelay.metered.ca:443")
-                .setUsername("openrelayproject")
-                .setPassword("openrelayproject")
-                .createIceServer(),
-            PeerConnection.IceServer.builder("turn:openrelay.metered.ca:443?transport=tcp")
-                .setUsername("openrelayproject")
-                .setPassword("openrelayproject")
-                .createIceServer()
-        )
-        val rtcConfig = PeerConnection.RTCConfiguration(iceServers).apply {
+        // since ICE just never finds a working candidate pair. Only a TURN relay fixes it - see
+        // IceConfig for why that relay is now resolved at runtime instead of hardcoded here, and
+        // for the specific way the hardcoded one had stopped working.
+        val rtcConfig = PeerConnection.RTCConfiguration(iceConfig.toIceServers()).apply {
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+            // Explicit rather than relying on the default: on a network that drops UDP, the
+            // TCP and TLS relay transports are the only ones left, and they are worthless if
+            // the agent won't gather TCP candidates for them.
+            tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.ENABLED
+            // A phone roaming from Wi-Fi to mobile data mid-broadcast gets new local addresses.
+            // Gathering once, at offer time, means those are never offered and the session dies
+            // at the end of the reconnect grace window; gathering continually surfaces them as
+            // trickled candidates, which the viewer page already consumes (it listens on
+            // offerCandidates' child_added for the life of the session).
+            continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
+            // When every candidate in a pair is relayed, the relay has already proved both legs
+            // are reachable, so waiting for a STUN binding response before sending media only
+            // adds a round trip to the slowest paths - exactly the cross-continent ones.
+            presumeWritableWhenFullyRelayed = true
         }
+        android.util.Log.d(
+            TAG,
+            "ICE config from ${iceConfig.origin}: ${iceConfig.stunUrls.size} STUN, " +
+                "${iceConfig.turnServers.sumOf { it.urls.size }} relay transports"
+        )
 
         val observer = object : PeerConnection.Observer {
             override fun onIceCandidate(candidate: IceCandidate) {
                 // Logged by type (host/srflx/relay), not just "a candidate arrived" - this is
                 // the one line of evidence that actually tells us, after the fact, whether a
                 // failed cross-country session had a relay candidate to try at all, versus the
-                // free TURN server never answering. Without it, "didn't connect" and "TURN was
-                // down" look identical in the logs.
-                android.util.Log.d(TAG, "Local ICE candidate: ${candidateTypeOf(candidate)}")
+                // TURN server never answering. Without it, "didn't connect" and "the relay was
+                // dead" look identical in the logs.
+                val type = candidateTypeOf(candidate)
+                android.util.Log.d(TAG, "Local ICE candidate: $type (via ${candidate.serverUrl})")
+                if (type == "relay") updateRelayStatus(RelayStatus.AVAILABLE)
                 signalingClient.pushOfferCandidate(sessionId, RtcJson.iceCandidateToJson(candidate))
             }
 
@@ -264,6 +307,15 @@ class ScreenShareHostSession(
             override fun onIceConnectionReceivingChange(receiving: Boolean) = Unit
             override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) {
                 android.util.Log.d(TAG, "onIceGatheringChange: $state")
+                // Gathering finished without a relay candidate, even though one was configured:
+                // the relay rejected us, is down, or every transport it offers is blocked here.
+                // Say so now, while the link is still on screen and unsent, instead of letting
+                // the viewer discover it.
+                if (state == PeerConnection.IceGatheringState.COMPLETE) {
+                    updateRelayStatus(
+                        if (iceConfig.hasRelay) RelayStatus.UNAVAILABLE else RelayStatus.NOT_CONFIGURED
+                    )
+                }
             }
             override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>) = Unit
             override fun onAddStream(stream: MediaStream) = Unit
@@ -305,6 +357,8 @@ class ScreenShareHostSession(
                     val answer = RtcJson.sessionDescriptionFromJson(raw)
                     peerConnection?.suspendSetRemoteDescription(answer)
                     hasRemoteAnswer = true
+                    // Past the share screen now; relay changes are no longer worth re-reporting.
+                    waitingForViewer = false
                     // Negotiation is starting for the first time now - start the same countdown
                     // used for a post-Live blip, so a connection that never completes at all
                     // (stuck negotiating forever) doesn't wait on ICE's own, less predictable
@@ -351,8 +405,10 @@ class ScreenShareHostSession(
     fun close() {
         if (closed) return
         closed = true
+        waitingForViewer = false
 
         runCatching { reconnectJob?.cancel() }
+        runCatching { relayDeadlineJob?.cancel() }
         runCatching { answerEventSource?.cancel() }
         runCatching { answerCandidatesEventSource?.cancel() }
         runCatching { signalingClient.deleteSession(sessionId) }
@@ -380,7 +436,10 @@ class ScreenShareHostSession(
         private const val CAPTURE_FPS = 15
         private const val DATA_SAVER_FPS = 8
         private const val DATA_SAVER_MAX_BITRATE_BPS = 400_000
-        private const val RECONNECT_GRACE_SECONDS = 20
+        private const val RECONNECT_GRACE_SECONDS = 35
+        // Same budget RelayProbe gives the Test button: TLS relays across a continent can take
+        // several seconds to allocate, but not this long.
+        private const val RELAY_DEADLINE_MILLIS = 12_000L
         const val DEFAULT_VIEWER_BASE_URL = "https://layerbit.co.in/tools/layerlink-viewer.html"
     }
 }

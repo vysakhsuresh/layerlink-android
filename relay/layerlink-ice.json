@@ -1,0 +1,15 @@
+{
+  "_comment": "Upload to https://layerbit.co.in/tools/layerlink-ice.json. Read by the Android app (IceConfigStore.REMOTE_CONFIG_URL) and, once patched, by layerlink-sharer.html and layerlink-viewer.html - so one edit here fixes the relay for every client with no app release. Replace the turn entry below with a real relay; see README.md.",
+  "stun": [
+    "stun:stun.l.google.com:19302",
+    "stun:stun1.l.google.com:19302",
+    "stun:stun.cloudflare.com:3478"
+  ],
+  "turn": [
+    {
+      "host": "REPLACE-WITH-YOUR-RELAY-HOST",
+      "username": "REPLACE-WITH-YOUR-USERNAME",
+      "credential": "REPLACE-WITH-YOUR-PASSWORD"
+    }
+  ]
+}

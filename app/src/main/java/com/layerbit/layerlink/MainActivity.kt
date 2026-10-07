@@ -22,6 +22,8 @@ import android.text.format.DateUtils
 import android.transition.AutoTransition
 import android.transition.TransitionManager
 import android.view.View
+import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -36,8 +38,13 @@ import androidx.lifecycle.lifecycleScope
 import com.layerbit.core.R as CoreR
 import com.layerbit.core.brand.BrandLinks
 import com.layerbit.core.webrtc.CloseReason
+import com.layerbit.core.webrtc.IceConfig
+import com.layerbit.core.webrtc.IceConfigStore
 import com.layerbit.core.webrtc.QualityProfile
+import com.layerbit.core.webrtc.RelayProbe
+import com.layerbit.core.webrtc.RelayStatus
 import com.layerbit.core.webrtc.SessionState
+import com.layerbit.core.webrtc.TurnServer
 import com.layerbit.layerlink.databinding.ActivityMainBinding
 import com.layerbit.layerlink.databinding.ItemHowStepBinding
 import com.layerbit.layerlink.service.ScreenShareService
@@ -58,6 +65,7 @@ class MainActivity : AppCompatActivity() {
     private var currentScreen: Screen? = null
     private var currentLink: String = ""
     private var pulseAnimator: ObjectAnimator? = null
+    private val iceConfigStore by lazy { IceConfigStore(this) }
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
@@ -105,6 +113,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnCopy.setOnClickListener { copyLink() }
         binding.btnCopyMini.setOnClickListener { copyLink() }
         binding.btnShare.setOnClickListener { shareLink() }
+        binding.relayTile.setOnClickListener { showRelayDialog() }
         binding.brandFooterInclude.brandFooterRow.setOnClickListener { BrandLinks.openWebsite(this) }
         binding.brandFooterInclude.btnGetHelp.setOnClickListener { BrandLinks.showGetHelpDialog(this) }
         binding.brandFooterInclude.btnBuyCoffee.setOnClickListener { BrandLinks.openCoffee(this) }
@@ -113,6 +122,7 @@ class MainActivity : AppCompatActivity() {
         bindStep(binding.step3, 3, R.string.step3_title, R.string.step3_body)
 
         maybeRequestNotificationPermission()
+        renderRelayTile()
         renderState(SessionState.Idle)
     }
 
@@ -234,6 +244,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.outcomeCard.isVisible = screen == Screen.OUTCOME
         binding.dataSaverTile.isVisible = screen == Screen.READY || screen == Screen.OUTCOME
+        binding.relayTile.isVisible = screen == Screen.READY || screen == Screen.OUTCOME
         binding.btnStart.isVisible = screen == Screen.READY || screen == Screen.OUTCOME
         binding.howItWorks.isVisible = screen == Screen.READY
         binding.brandFooterInclude.root.isVisible = screen == Screen.READY || screen == Screen.OUTCOME
@@ -257,6 +268,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.shareCard.isVisible = screen == Screen.WAITING && link != null
+        renderRelayNote(state)
         binding.factsCard.isVisible = (screen == Screen.WAITING || screen == Screen.LIVE) && sessionId != null
         binding.liveClockBlock.isVisible = screen == Screen.LIVE
         binding.miniLinkRow.isVisible = screen == Screen.LIVE
@@ -365,6 +377,14 @@ class MainActivity : AppCompatActivity() {
         val error = ContextCompat.getColor(this, CoreR.color.status_error_soft)
         val muted = ContextCompat.getColor(this, CoreR.color.text_muted)
         when {
+            // "A network between you blocked the connection" is the wrong thing to say when the
+            // session knew it had no relay: that *is* the cause, it's nobody's network, and no
+            // amount of switching between Wi-Fi and mobile data will change it.
+            state is SessionState.Closed && state.reason == CloseReason.NEVER_CONNECTED &&
+                (state.relay == RelayStatus.NOT_CONFIGURED || state.relay == RelayStatus.UNAVAILABLE) -> showOutcome(
+                R.drawable.ic_relay, error, getString(R.string.outcome_no_relay_title),
+                getString(R.string.outcome_no_relay_body), R.drawable.outcome_error_background
+            )
             state is SessionState.Closed && state.reason == CloseReason.NEVER_CONNECTED -> showOutcome(
                 R.drawable.ic_wifi_off, error, getString(R.string.outcome_never_connected_title),
                 getString(R.string.outcome_never_connected_body), R.drawable.outcome_error_background
@@ -393,6 +413,154 @@ class MainActivity : AppCompatActivity() {
         binding.outcomeTitle.text = title
         binding.outcomeBody.text = body
         binding.outcomeCard.setBackgroundResource(background)
+    }
+
+    /**
+     * The relay tile's resting state, from whatever the store would resolve for the next
+     * broadcast. Reads the device relay synchronously; the hosted config is only consulted for
+     * its *cached* value here, because this runs on every render and must not touch the network.
+     */
+    private fun renderRelayTile() {
+        val cached = iceConfigStore.resolveCached()
+        val (subtitle, action, tint) = when {
+            cached.origin == IceConfig.Origin.DEVICE -> Triple(
+                getString(R.string.relay_device_subtitle, relayHostLabel(cached)),
+                getString(R.string.relay_change),
+                CoreR.color.status_live
+            )
+            cached.hasRelay -> Triple(
+                getString(R.string.relay_remote_subtitle, relayHostLabel(cached)),
+                getString(R.string.relay_change),
+                CoreR.color.status_live
+            )
+            else -> Triple(
+                getString(R.string.relay_none_subtitle),
+                getString(R.string.relay_set_up),
+                CoreR.color.status_waiting
+            )
+        }
+        binding.relaySubtitle.text = subtitle
+        binding.relayAction.text = action
+        binding.relayIcon.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(this, tint))
+    }
+
+    /** The relay's hostname, pulled back out of the first expanded TURN URL for display. */
+    private fun relayHostLabel(config: IceConfig): String {
+        val url = config.turnServers.firstOrNull()?.urls?.firstOrNull() ?: return ""
+        return url.substringAfter(':').substringBefore(':').substringBefore('?')
+    }
+
+    /** The per-broadcast relay line under the link, while the link is still being sent. */
+    private fun renderRelayNote(state: SessionState) {
+        val relay = (state as? SessionState.Waiting)?.relay
+        if (relay == null) {
+            binding.relayNote.isVisible = false
+            return
+        }
+        val (text, colorRes) = when (relay) {
+            RelayStatus.AVAILABLE -> R.string.relay_note_available to CoreR.color.status_live
+            RelayStatus.PENDING -> R.string.relay_note_pending to CoreR.color.text_muted
+            RelayStatus.UNAVAILABLE, RelayStatus.NOT_CONFIGURED ->
+                R.string.relay_note_unavailable to CoreR.color.status_waiting
+        }
+        binding.relayNote.setText(text)
+        binding.relayNote.setTextColor(ContextCompat.getColor(this, colorRes))
+        binding.relayNote.isVisible = true
+    }
+
+    /**
+     * Relay setup, with a Test that runs the real ICE agent against the credentials as typed
+     * (see [RelayProbe]) - so a wrong password is caught here, in seconds, rather than by a
+     * viewer in another country who just never connects.
+     */
+    private fun showRelayDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_relay_setup, null)
+        val hostField = view.findViewById<EditText>(R.id.relayHost)
+        val usernameField = view.findViewById<EditText>(R.id.relayUsername)
+        val passwordField = view.findViewById<EditText>(R.id.relayPassword)
+        val result = view.findViewById<TextView>(R.id.relayTestResult)
+        val testButton = view.findViewById<TextView>(R.id.btnRelayTest)
+        val saveButton = view.findViewById<TextView>(R.id.btnRelaySave)
+        val removeButton = view.findViewById<TextView>(R.id.btnRelayRemove)
+
+        val existing = iceConfigStore.deviceRelay()
+        if (existing != null) {
+            hostField.setText(existing.host)
+            usernameField.setText(existing.username)
+            passwordField.setText(existing.password)
+            removeButton.isVisible = true
+        }
+
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(view).create()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        fun typedRelay(): IceConfigStore.DeviceRelay? {
+            val host = hostField.text.toString().trim()
+            val username = usernameField.text.toString().trim()
+            val password = passwordField.text.toString().trim()
+            if (host.isEmpty() || username.isEmpty() || password.isEmpty()) return null
+            return IceConfigStore.DeviceRelay(host, username, password)
+        }
+
+        fun showResult(text: String, @androidx.annotation.ColorRes colorRes: Int) {
+            result.text = text
+            result.setTextColor(ContextCompat.getColor(this, colorRes))
+            result.isVisible = true
+        }
+
+        var probeJob: Job? = null
+        testButton.setOnClickListener {
+            val relay = typedRelay()
+            if (relay == null) {
+                showResult(getString(R.string.relay_fields_missing), CoreR.color.status_waiting)
+                return@setOnClickListener
+            }
+            if (probeJob?.isActive == true) return@setOnClickListener
+            showResult(getString(R.string.relay_testing), CoreR.color.text_muted)
+            probeJob = lifecycleScope.launch {
+                val config = IceConfig(
+                    stunUrls = IceConfig.builtIn.stunUrls,
+                    turnServers = listOf(TurnServer.forHost(relay.host, relay.username, relay.password)),
+                    origin = IceConfig.Origin.DEVICE
+                )
+                when (val outcome = RelayProbe.run(this@MainActivity, config)) {
+                    is RelayProbe.Result.Working -> showResult(
+                        getString(R.string.relay_test_working, outcome.via.joinToString(", ")),
+                        CoreR.color.status_live
+                    )
+                    is RelayProbe.Result.Rejected, is RelayProbe.Result.NotConfigured -> showResult(
+                        getString(R.string.relay_test_rejected), CoreR.color.status_error_soft
+                    )
+                    is RelayProbe.Result.Unavailable -> showResult(
+                        getString(R.string.relay_test_unavailable, outcome.message),
+                        CoreR.color.status_error_soft
+                    )
+                }
+            }
+        }
+
+        saveButton.setOnClickListener {
+            val relay = typedRelay()
+            if (relay == null) {
+                showResult(getString(R.string.relay_fields_missing), CoreR.color.status_waiting)
+                return@setOnClickListener
+            }
+            iceConfigStore.saveDeviceRelay(relay)
+            renderRelayTile()
+            dialog.dismiss()
+            Toast.makeText(this, R.string.relay_saved, Toast.LENGTH_SHORT).show()
+        }
+
+        removeButton.setOnClickListener {
+            iceConfigStore.clearDeviceRelay()
+            renderRelayTile()
+            dialog.dismiss()
+            Toast.makeText(this, R.string.relay_removed, Toast.LENGTH_SHORT).show()
+        }
+
+        // The probe holds a PeerConnectionFactory; dropping the dialog must not leave it running.
+        dialog.setOnDismissListener { probeJob?.cancel() }
+        dialog.show()
     }
 
     private fun copyLink() {
