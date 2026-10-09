@@ -5,58 +5,87 @@
      <merge> - View Binding's merge-flattening does not work across module boundaries, so the
      including app accesses this layout's views via the generated ViewBrandFooterBinding
      nested under the include's own id, e.g. binding.brandFooterInclude.brandFooterRow).
-     Styled to match layerbit.co.in's own header mark and pill-shaped action buttons. -->
+
+     Two stacked, centred lines: the signature, then the two things a user might want from us.
+
+     This replaced two earlier attempts, and what both got wrong is worth recording. The first
+     was a 1dp full-bleed rule above two bordered text pills side by side - the only full-bleed
+     hairline in an app whose every other boundary is a rounded card, so it read as window
+     chrome, and two bold mirrored pills directly under the Stop button made the last thing on
+     the screen look like a decision the user owed somebody. The second replaced the pills with
+     icons alone, on the theory that a steaming cup needs no label. On glass it did not hold up:
+     an icon flanking each side of the signature reads as three separate objects rather than one
+     sign-off, and an unlabelled glyph asks the user to decode it at the exact moment they have
+     no reason to care. Words do not have that problem.
+
+     So the actions are plain text, on one line under the signature where a footer's small print
+     belongs. Colour is all that marks them as tappable now - accent blue for help, warm beige
+     for the coffee - which is also why they are the only coloured type in the block.
+
+     The separator is a middot rather than a pipe or a slash: it is the lightest mark that still
+     parts two phrases, and it is not mistaken for punctuation belonging to either of them. -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingTop="26dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="8dp">
 
-    <View
-        android:id="@+id/brandFooterDivider"
-        android:layout_width="0dp"
-        android:layout_height="1dp"
-        android:background="@color/accent_main_dim"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
+    <!-- The mark and the credit line: the one part of every version of this footer that was
+         always right. Tapping it opens layerbit.co.in. -->
     <LinearLayout
         android:id="@+id/brandFooterRow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
+        android:contentDescription="@string/core_powered_by"
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="6dp"
+        android:paddingStart="8dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="0dp"
+        app:layout_constrainedWidth="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/brandFooterDivider">
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:contentDescription="@string/core_powered_by"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
             android:src="@drawable/ic_layerbit_mark" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="@string/core_powered_by"
             android:textColor="@color/text_muted"
             android:textSize="12sp" />
 
     </LinearLayout>
 
+    <!-- Each link carries its own 48dp minimum height and 10dp of side padding, so the tappable
+         box is a comfortable target even though the text itself is small.
+
+         That 48dp box is also why this row needs no top margin and why the credit line above it
+         carries no bottom padding. 13sp type leaves roughly 14dp of empty box above the glyphs,
+         so any spacing added here lands on top of space the user already cannot see, and the two
+         lines drift apart for no visible reason. Closing the real padding and letting the box's
+         own slack do the separating is what keeps the pair reading as one block. The gap is
+         measured between ink, not between view bounds. -->
     <LinearLayout
         android:id="@+id/brandSupportRow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:layout_marginBottom="24dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -64,56 +93,45 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/brandFooterRow">
 
-        <LinearLayout
-            android:id="@+id/btnGetHelp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/pill_help_background"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_help" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="@string/core_get_help"
-                android:textColor="@color/text_primary"
-                android:textSize="12.5sp"
-                android:textStyle="bold" />
-
-        </LinearLayout>
-
-        <LinearLayout
+        <TextView
             android:id="@+id/btnBuyCoffee"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:background="@drawable/pill_coffee_background"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minHeight="48dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="@string/core_buy_coffee"
+            android:textColor="@color/link_coffee"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-            <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_coffee" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:text="@string/core_link_separator"
+            android:textColor="@color/text_muted"
+            android:textSize="13sp" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="@string/core_buy_coffee"
-                android:textColor="@color/text_primary"
-                android:textSize="12.5sp"
-                android:textStyle="bold" />
-
-        </LinearLayout>
+        <TextView
+            android:id="@+id/btnGetHelp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minHeight="48dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="@string/core_get_help"
+            android:textColor="@color/link_help"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
 
