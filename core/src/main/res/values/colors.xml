@@ -20,8 +20,9 @@
     <color name="outcome_error_stroke">#38EF4444</color>
     <!-- The two footer support links. With no icon, border or pill behind them, colour is the
          only thing left saying they are tappable, so each gets its own: the app's accent blue
-         for help, and a warm beige - the colour of the coffee, not of a warning - for the
-         tip jar. -->
+         for help, and for the tip jar the exact amber the coffee cup icon was drawn in, and
+         that layerbit.co.in's own Support button wears. A paler beige was tried first and read
+         as washed-out grey next to the blue rather than as a second link. -->
     <color name="link_help">#38BDF8</color>
-    <color name="link_coffee">#E3CFA7</color>
+    <color name="link_coffee">#FFC107</color>
 </resources>
